@@ -1335,7 +1335,6 @@ function initKeyboardShortcuts() {
         } else { sequence = ""; }
 
         switch (k) {
-            case 'z': updateQty("good", 1); break;
             case 's': toggleSwiperAutoplay(); break;
             case ' ': e.preventDefault(); toggleDowntime(); break;
             case 'r': e.preventDefault(); window.resetData(); break;
@@ -1401,6 +1400,7 @@ let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000; // 3 detik
 const WS_SERVER = 'ws://192.168.62.38:3000';
+let lastGoodSignalTime = 0; // Proteksi duplikat signal dalam 200ms
 
 window.wsStatus = 'disconnected'; // Global status
 
@@ -1422,8 +1422,15 @@ function connectWebSocket() {
             console.log('⏰ Waktu:', new Date().toLocaleTimeString());
 
             if (event.data === 'z') {
-                console.log('🎯 GOOD Button Diterima!');
-                updateQty("good", 1);
+                // Proteksi duplikat signal dalam 200ms
+                const now = Date.now();
+                if (now - lastGoodSignalTime >= 200) {
+                    console.log('🎯 GOOD Button Diterima!');
+                    updateQty("good", 1);
+                    lastGoodSignalTime = now;
+                } else {
+                    console.log('⏭️ Signal duplikat diabaikan');
+                }
             }
         };
 
@@ -1452,7 +1459,6 @@ function connectWebSocket() {
 
 // Connect saat page load
 document.addEventListener('DOMContentLoaded', connectWebSocket);
-connectWebSocket();
 
 // Debug function - bisa dipanggil dari console
 window.checkWsStatus = () => {
