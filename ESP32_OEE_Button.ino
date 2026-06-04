@@ -10,6 +10,8 @@ const char* serverURL = "http://192.168.62.38:3000/good";
 #define LED_WIFI 2
 
 bool lastState = HIGH;
+unsigned long lastPressTime = 0;
+const unsigned long DEBOUNCE_DELAY = 500; // 500ms debounce
 
 void setup() {
 
@@ -37,7 +39,9 @@ void loop() {
 
   bool currentState = digitalRead(INPUT_PIN);
 
-  if (lastState == HIGH && currentState == LOW) {
+  unsigned long currentTime = millis();
+
+  if (lastState == HIGH && currentState == LOW && (currentTime - lastPressTime) > DEBOUNCE_DELAY) {
 
     HTTPClient http;
 
@@ -49,7 +53,9 @@ void loop() {
 
     http.end();
 
-    delay(300);
+    lastPressTime = currentTime;
+
+    delay(50); // Singkat, cuma tunggu HTTP
   }
 
   lastState = currentState;
