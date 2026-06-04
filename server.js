@@ -9,7 +9,7 @@ const FILE_DOWNTIME = './MASTER_DOWNTIME_PABRIK.xlsx';
 async function writeToExcel(filePath, sheetName, headers, dataRow) {
     const workbook = new ExcelJS.Workbook();
     if (fs.existsSync(filePath)) {
-        try { await workbook.xlsx.readFile(filePath); } 
+        try { await workbook.xlsx.readFile(filePath); }
         catch (e) { console.log("File terkunci, mencoba menulis..."); }
     }
 
@@ -90,8 +90,8 @@ const serverKlien = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server: serverKlien });
-serverKlien.listen(8001, '0.0.0.0', () => {
-    console.log('[KLIEN] WebSocket server jalan di port 8001');
+serverKlien.listen(3000, '0.0.0.0', () => {
+    console.log('[KLIEN] WebSocket server jalan di port 3000');
 });
 
 // ── SERVER UTAMA (API Excel) port 3000 ──────────────────────
@@ -151,6 +151,6 @@ serverUtama.listen(3000, '0.0.0.0', () => {
 
 console.log('===========================================');
 console.log('   OEE TEST MODE - SINGLE PC');
-console.log('   WebSocket : port 8001');
+console.log('   WebSocket : port 3000');
 console.log('   API Excel : port 3000');
 console.log('===========================================');
