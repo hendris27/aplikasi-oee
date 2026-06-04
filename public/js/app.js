@@ -1423,7 +1423,6 @@ function connectWebSocket() {
 
             if (event.data === 'z') {
                 console.log('🎯 GOOD Button Diterima!');
-                alert('✅ GOOD Diterima dari ESP32!'); // Visible alert
                 updateQty("good", 1);
             }
         };
@@ -1431,7 +1430,6 @@ function connectWebSocket() {
         ws.onerror = (error) => {
             window.wsStatus = 'error';
             console.error('❌ WebSocket Error:', error);
-            alert('⚠️ WebSocket Error - Lihat console untuk details');
         };
 
         ws.onclose = () => {
@@ -1444,13 +1442,11 @@ function connectWebSocket() {
                 setTimeout(connectWebSocket, WS_RECONNECT_DELAY);
             } else {
                 console.error('❌ WebSocket reconnect gagal setelah', WS_MAX_RECONNECT, 'kali');
-                alert('❌ Tidak bisa connect ke server! IP: ' + WS_SERVER);
             }
         };
     } catch (error) {
         window.wsStatus = 'error';
         console.error('❌ WebSocket initialization error:', error);
-        alert('❌ Error: ' + error.message);
     }
 }
 
@@ -1460,5 +1456,5 @@ connectWebSocket();
 
 // Debug function - bisa dipanggil dari console
 window.checkWsStatus = () => {
-    alert(`WebSocket Status: ${window.wsStatus}\nServer: ${WS_SERVER}`);
+    console.log(`WebSocket Status: ${window.wsStatus}\nServer: ${WS_SERVER}`);
 };
