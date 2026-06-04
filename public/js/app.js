@@ -1400,41 +1400,65 @@ let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000; // 3 detik
+const WS_SERVER = 'ws://192.168.62.38:8000';
+
+window.wsStatus = 'disconnected'; // Global status
 
 function connectWebSocket() {
+    console.log(`[WS] Connecting to: ${WS_SERVER}...`);
+
     try {
-        ws = new WebSocket('ws://192.168.62.38:8000');
+        ws = new WebSocket(WS_SERVER);
 
         ws.onopen = () => {
+            window.wsStatus = 'connected';
             console.log('✅ WebSocket Connected - Menunggu signal dari ESP32');
+            console.log('🔗 Server:', WS_SERVER);
             wsReconnectAttempts = 0; // Reset counter
         };
 
         ws.onmessage = (event) => {
             console.log('📩 Signal dari Server:', event.data);
+            console.log('⏰ Waktu:', new Date().toLocaleTimeString());
+
             if (event.data === 'z') {
                 console.log('🎯 GOOD Button Diterima!');
+                alert('✅ GOOD Diterima dari ESP32!'); // Visible alert
                 updateQty("good", 1);
             }
         };
 
         ws.onerror = (error) => {
+            window.wsStatus = 'error';
             console.error('❌ WebSocket Error:', error);
+            alert('⚠️ WebSocket Error - Lihat console untuk details');
         };
 
         ws.onclose = () => {
-            console.warn('⚠️ WebSocket Disconnected - Mencoba reconnect...');
+            window.wsStatus = 'disconnected';
+            console.warn('⚠️ WebSocket Disconnected');
+
             if (wsReconnectAttempts < WS_MAX_RECONNECT) {
                 wsReconnectAttempts++;
+                console.log(`🔄 Reconnect attempt ${wsReconnectAttempts}/${WS_MAX_RECONNECT}...`);
                 setTimeout(connectWebSocket, WS_RECONNECT_DELAY);
             } else {
                 console.error('❌ WebSocket reconnect gagal setelah', WS_MAX_RECONNECT, 'kali');
+                alert('❌ Tidak bisa connect ke server! IP: ' + WS_SERVER);
             }
         };
     } catch (error) {
+        window.wsStatus = 'error';
         console.error('❌ WebSocket initialization error:', error);
+        alert('❌ Error: ' + error.message);
     }
 }
 
 // Connect saat page load
+document.addEventListener('DOMContentLoaded', connectWebSocket);
 connectWebSocket();
+
+// Debug function - bisa dipanggil dari console
+window.checkWsStatus = () => {
+    alert(`WebSocket Status: ${window.wsStatus}\nServer: ${WS_SERVER}`);
+};
