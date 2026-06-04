@@ -145,12 +145,12 @@ const serverUtama = http.createServer((req, res) => {
     res.end();
 });
 
-serverUtama.listen(3000, '0.0.0.0', () => {
-    console.log('[UTAMA] API server jalan di port 3000');
+serverUtama.listen(4000, '0.0.0.0', () => {
+    console.log('[UTAMA] API server jalan di port 4000');
 });
 
 console.log('===========================================');
 console.log('   OEE TEST MODE - SINGLE PC');
 console.log('   WebSocket : port 3000');
-console.log('   API Excel : port 3000');
+console.log('   API Excel : port 4000');
 console.log('===========================================');
