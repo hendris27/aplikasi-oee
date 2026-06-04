@@ -1400,7 +1400,7 @@ let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000; // 3 detik
-const WS_SERVER = 'ws://192.168.62.38:8000';
+const WS_SERVER = 'ws://192.168.62.38:8001';
 
 window.wsStatus = 'disconnected'; // Global status
 

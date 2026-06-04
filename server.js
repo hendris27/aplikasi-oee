@@ -90,8 +90,8 @@ const serverKlien = http.createServer((req, res) => {
 });
 
 const wss = new WebSocketServer({ server: serverKlien });
-serverKlien.listen(8000, '0.0.0.0', () => {
-    console.log('[KLIEN] WebSocket server jalan di port 8000');
+serverKlien.listen(8001, '0.0.0.0', () => {
+    console.log('[KLIEN] WebSocket server jalan di port 8001');
 });
 
 // ── SERVER UTAMA (API Excel) port 3000 ──────────────────────
@@ -151,6 +151,6 @@ serverUtama.listen(3000, '0.0.0.0', () => {
 
 console.log('===========================================');
 console.log('   OEE TEST MODE - SINGLE PC');
-console.log('   WebSocket : port 8000');
+console.log('   WebSocket : port 8001');
 console.log('   API Excel : port 3000');
 console.log('===========================================');
