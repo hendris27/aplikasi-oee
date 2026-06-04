@@ -15,8 +15,9 @@ function formatDateTime(date) {
     return `${dd}/${mm}/${yy} ${h}:${m}:${s}`;
 }
 function getTypePresets() {
-    try {return JSON.parse(localStorage.getItem('type_presets') || '{}');
-    } catch (e) {return {};}
+    try {
+        return JSON.parse(localStorage.getItem('type_presets') || '{}');
+    } catch (e) { return {}; }
 }
 
 function getTypePreset(type) {
@@ -57,7 +58,7 @@ function saveTypePreset(type, data) {
 
 async function loadTypePresetsFromExcel() {
     try {
-       var pathOptions = [
+        var pathOptions = [
             '/import/oee-data.xlsx', 'import/oee-data.xlsx', './import/oee-data.xlsx'
         ];
         var res = null;
@@ -111,8 +112,10 @@ async function loadTypePresetsFromExcel() {
                 if (data.type) {
                     saveTypePreset(data.type, data);
                     c++;
-                }}
-            return c;}
+                }
+            }
+            return c;
+        }
 
         if (window.XLSX) {
             try {
@@ -132,7 +135,8 @@ async function loadTypePresetsFromExcel() {
     } catch (e) {
         console.warn('Error reading Excel preset:', e);
         return 0;
-    }}
+    }
+}
 
 function getDynamicTarget() {
     const targetModel = Number(localStorage.getItem("target_model_fixed")) || 0;
@@ -140,7 +144,7 @@ function getDynamicTarget() {
     return targetModel;
 }
 
-document.addEventListener("DOMContentLoaded", async function() {
+document.addEventListener("DOMContentLoaded", async function () {
     const defaultData = {
         "runtimeTotal": "0",
         "downtimeTotal": "0",
@@ -163,13 +167,16 @@ document.addEventListener("DOMContentLoaded", async function() {
         observeParents: true,
         autoplay: {
             delay: 8000,
-            disableOnInteraction: false},
+            disableOnInteraction: false
+        },
         navigation: {
             nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',},
+            prevEl: '.swiper-button-prev',
+        },
         pagination: {
             el: '.swiper-pagination',
-            clickable: true }
+            clickable: true
+        }
     });
 
     if (localStorage.getItem("shiftStartedFlag") === "true") {
@@ -181,9 +188,10 @@ document.addEventListener("DOMContentLoaded", async function() {
             setTimeout(() => {
                 window.toggleDowntime(true);
             }, 500);
-        }}
-    
-    startTime(); 
+        }
+    }
+
+    startTime();
     renderAll();
     initKeyboardShortcuts();
     loadTypePresetsFromExcel();
@@ -191,8 +199,8 @@ document.addEventListener("DOMContentLoaded", async function() {
 
 window.openConfig = async function () {
     const isStarted = localStorage.getItem("shiftStartedFlag") === "true";
-    
-const { value: form } = await Swal.fire({
+
+    const { value: form } = await Swal.fire({
         title: isStarted ? 'EDIT CONFIGURATION' : 'PRODUCTION CONFIGURATION',
         showCancelButton: true,
         allowOutsideClick: false,
@@ -231,63 +239,63 @@ const { value: form } = await Swal.fire({
                     </select>
                 </div>
             </div>`,
-            didOpen: () => {
-                const modelInput = document.getElementById('swal-model');
-                const targetInput = document.getElementById('swal-target');
-                const uphInput = document.getElementById('swal-uph');
-                const customerInput = document.getElementById('swal-cst');
+        didOpen: () => {
+            const modelInput = document.getElementById('swal-model');
+            const targetInput = document.getElementById('swal-target');
+            const uphInput = document.getElementById('swal-uph');
+            const customerInput = document.getElementById('swal-cst');
 
-                let isManualEdit = false;
+            let isManualEdit = false;
 
-                uphInput.addEventListener('input', () => { isManualEdit = true; });
+            uphInput.addEventListener('input', () => { isManualEdit = true; });
 
-                const applyAutoFill = () => {
-                    if (isManualEdit) return; 
+            const applyAutoFill = () => {
+                if (isManualEdit) return;
 
-                    const val = modelInput.value;
-                    const preset = getTypePreset(val);
+                const val = modelInput.value;
+                const preset = getTypePreset(val);
 
-                    if (preset) {
-                        uphInput.value = preset.uph !== undefined ? preset.uph : 0;
-                        customerInput.value = preset.customer || '';
-                    } else {
-                        if (!val) {
-                            uphInput.value = '';
-                            customerInput.value = '';
-                        }
+                if (preset) {
+                    uphInput.value = preset.uph !== undefined ? preset.uph : 0;
+                    customerInput.value = preset.customer || '';
+                } else {
+                    if (!val) {
+                        uphInput.value = '';
+                        customerInput.value = '';
                     }
-                };
+                }
+            };
 
-                modelInput.addEventListener('input', () => {
-                    isManualEdit = false;
-                    applyAutoFill();
-                });
-            },
-            preConfirm: () => {
-                return {
-                    line: document.getElementById('swal-line').value,
-                    machine: document.getElementById('swal-machine').value,
-                    model: document.getElementById('swal-model').value,
-                    target: parseFloat(document.getElementById('swal-target').value) ||
-                            parseFloat(document.getElementById('swal-uph').value) || 0,
-                    uph: parseFloat(document.getElementById('swal-uph').value) || 0,
-                    qty_Pallet: parseFloat(document.getElementById('swal-qty-Pallet').value) || 1,
-                    customer: document.getElementById('swal-cst').value,
-                    time: document.getElementById('swal-time').value,
-                    shift: document.getElementById('swal-shift').value,
-                    group: document.getElementById('swal-group').value
-                };
+            modelInput.addEventListener('input', () => {
+                isManualEdit = false;
+                applyAutoFill();
+            });
+        },
+        preConfirm: () => {
+            return {
+                line: document.getElementById('swal-line').value,
+                machine: document.getElementById('swal-machine').value,
+                model: document.getElementById('swal-model').value,
+                target: parseFloat(document.getElementById('swal-target').value) ||
+                    parseFloat(document.getElementById('swal-uph').value) || 0,
+                uph: parseFloat(document.getElementById('swal-uph').value) || 0,
+                qty_Pallet: parseFloat(document.getElementById('swal-qty-Pallet').value) || 1,
+                customer: document.getElementById('swal-cst').value,
+                time: document.getElementById('swal-time').value,
+                shift: document.getElementById('swal-shift').value,
+                group: document.getElementById('swal-group').value
+            };
         }
     });
 
-if (form) {
-    const now = Date.now();
-    const timeNowStr = formatDateTime(new Date());
-    const oldModel = localStorage.getItem("model");
+    if (form) {
+        const now = Date.now();
+        const timeNowStr = formatDateTime(new Date());
+        const oldModel = localStorage.getItem("model");
 
         if (isStarted && oldModel !== form.model && oldModel !== "") {
             window.saveToHistory();
-            
+
             [
                 "good", "nogood", "runtimeTotal", "downtimeTotal", "realCycleVal", "idealqty"
             ].forEach(k => localStorage.setItem(k, "0"));
@@ -383,10 +391,10 @@ window.toggleDowntime = async function (isAuto = false) {
         localStorage.setItem("downtime_start_time_ms", Date.now().toString());
         localStorage.setItem("downtime_start_clock_str", timeStartStr);
         localStorage.setItem("mode", "down");
-        console.log("Downtime dimulai:", { 
-            reason: final, 
-            category: category, 
-            startTime: timeStartStr 
+        console.log("Downtime dimulai:", {
+            reason: final,
+            category: category,
+            startTime: timeStartStr
         });
 
     } else {
@@ -396,7 +404,8 @@ window.toggleDowntime = async function (isAuto = false) {
             localStorage.removeItem("downtimeCategory");
             localStorage.removeItem("downtime_start_time_ms");
             localStorage.removeItem("downtime_start_clock_str");
-        }}
+        }
+    }
     renderAll();
 };
 
@@ -418,7 +427,7 @@ window.updateQty = async function (key, change) {
             'EXCESS SOLDER', 'EXTRA COMPONENT', 'FCT NG', 'FLOW UP', 'FM', 'FOGGING', 'FLOATING', 'WIRE BERCABANG', 'GAP', 'GLUE', 'HAIR MARK', 'INSULIN', 'ICT NG', 'KEYENCE NG', 'LED OFF', 'LESS PRINTING', 'LESS SOLDER', 'LESS COATING', 'LONG LEAD', 'LOOKING DOWN',
             'LOOKING UP', 'LOOSE', 'LABELING', 'MA', 'MELTING', 'MISSING', 'NO BARCODE', 'NO CENTER', 'NO FLOW UP', 'NO FLUX', 'NO INSERT', 'NO SOLDER', 'NO LEAD', 'NO PRESS', 'NO SOUND', 'OC', 'OVER COATING', 'OVER CUTTING', 'PAINTING NG', 'PATTERN CUT',
             'PATTERN SHORT', 'PCB DROP', 'PIN HOLE', 'PEEL OFF', 'ROOMWRITE /TAISI', 'RUSTY', 'SCRATCH', 'SMALL HOLE', 'SHIELD OUT', 'SOLDER SHORT', 'SOLDER BALL', 'SOLDER HOLE', 'SOLDER ON HOLE', 'SOLDER SPIKE', 'SOLDER SPLASH', 'SOLDER TAIL', 'TAPE', 'TEARING', 'TRUE HOLE', 'UNEVEN',
-            'UNSMOTH', 'VOID', 'UPPER', 'WAIT SCAN', 'WHITE DOT', 'WRAP', 'WRONG COMPONENT', 'WRONG INSERT', 'WRONG POSITION', 'WRONG PCB', 'WRONG POLARITY','OTHERS (Custom Input)'
+            'UNSMOTH', 'VOID', 'UPPER', 'WAIT SCAN', 'WHITE DOT', 'WRAP', 'WRONG COMPONENT', 'WRONG INSERT', 'WRONG POSITION', 'WRONG PCB', 'WRONG POLARITY', 'OTHERS (Custom Input)'
         ];
 
         const options = {};
@@ -427,34 +436,34 @@ window.updateQty = async function (key, change) {
         const { value: r } = await Swal.fire({
             title: 'REJECT REASON',
             input: 'select',
-            inputOptions: options, 
+            inputOptions: options,
             confirmButtonColor: "#E8083E",
             inputValidator: v => !v && 'REASON REQUIRED!'
         });
-        
+
         if (!r) return;
-        
+
         let fr = r;
         if (r === "OTHERS (Custom Input)") {
-            const { value: custom } = await Swal.fire({ 
-                title: 'CUSTOM REASON', 
+            const { value: custom } = await Swal.fire({
+                title: 'CUSTOM REASON',
                 input: 'text',
                 inputValidator: v => !v && 'Required!'
             });
             fr = custom || "Unknown";
         }
-        
+
         g = g - qtyPallet; n = n + qtyPallet;
         localStorage.setItem("good", g);
         localStorage.setItem("nogood", n);
 
         let logs = JSON.parse(localStorage.getItem("ng_logs") || "[]");
         let all = JSON.parse(localStorage.getItem("all_ng_logs") || "[]");
-        const data = { 
-            time: new Date().toLocaleTimeString('id-ID'), 
-            reason: fr, 
-            model: localStorage.getItem("type") || "-", 
-            customer: localStorage.getItem("cst") || "-" 
+        const data = {
+            time: new Date().toLocaleTimeString('id-ID'),
+            reason: fr,
+            model: localStorage.getItem("type") || "-",
+            customer: localStorage.getItem("cst") || "-"
         };
         logs.push(data);
         all.push(data);
@@ -467,17 +476,17 @@ window.updateQty = async function (key, change) {
             let start = parseInt(localStorage.getItem("lastProductTime")) || parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
             localStorage.setItem("realCycleVal", ((now - start) / 1000).toFixed(2));
             localStorage.setItem("lastProductTime", now.toString());
-            
+
             if (localStorage.getItem("mode") === "down") {
                 const dtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
                 const dtStartClock = localStorage.getItem("downtime_start_clock_str");
                 const reason = localStorage.getItem("downtimeGroup") || "Not Filled In Yet";
-                
+
                 if (dtStartMs) {
                     const dtEndMs = Date.now();
                     const dtEndClock = formatDateTime(new Date(dtEndMs));
-                    const durationMs = dtEndMs - dtStartMs; 
-                    
+                    const durationMs = dtEndMs - dtStartMs;
+
                     if (durationMs >= 1000 && dtStartClock) {
                         let logs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
                         logs.push({
@@ -487,7 +496,7 @@ window.updateQty = async function (key, change) {
                             reason: reason,
                             category: localStorage.getItem("downtimeCategory") || "DOWN",
                             model: localStorage.getItem("type") || "-"
-                        });                
+                        });
                         localStorage.setItem("downtime_logs", JSON.stringify(logs));
                         const dataDowntimeRealtime = {
                             targetFile: "DOWNTIME",
@@ -513,7 +522,7 @@ window.updateQty = async function (key, change) {
         }
         localStorage.setItem("good", g);
     }
-    
+
     if (Swal.isVisible()) Swal.close();
     renderAll();
 };
@@ -526,15 +535,15 @@ function startOEE() {
         const shift = parseInt(localStorage.getItem('shift')) || 1;
         const hoursConfig = parseInt(localStorage.getItem('rawPlannedTime')) || 8;
         const config = getScheduleConfig()?.[shift]?.[hoursConfig];
-        if (!config) return; 
+        if (!config) return;
         const d = new Date();
         const currentTime = (d.getHours() * 60) + d.getMinutes();
         const toMin = (t) => { const [h, m] = t.split(':').map(Number); return (h * 60) + m; };
         const startMin = toMin(config.start);
         const endMin = toMin(config.end);
 
-        let isInsideShift = (startMin > endMin) 
-            ? (currentTime >= startMin || currentTime < endMin) 
+        let isInsideShift = (startMin > endMin)
+            ? (currentTime >= startMin || currentTime < endMin)
             : (currentTime >= startMin && currentTime < endMin);
 
         let isResting = false;
@@ -542,63 +551,65 @@ function startOEE() {
             if (currentTime >= toMin(b.s) && currentTime < toMin(b.e)) {
                 isResting = true;
                 break;
-            }}
+            }
+        }
 
         if (isResting && isInsideShift) {
             if (!breakPopup && !Swal.isVisible()) {
                 breakPopup = Swal.fire({ icon: "info", title: "BREAK TIME", allowOutsideClick: false });
             }
             renderAll();
-            return; 
+            return;
         } else if (breakPopup) {
             Swal.close();
-            breakPopup = null;}
+            breakPopup = null;
+        }
 
         if (!isInsideShift) { renderAll(); return; }
 
         const now = Date.now();
         const lastUpd = parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
-        const elapsed = now - lastUpd; 
+        const elapsed = now - lastUpd;
         localStorage.setItem("lastModeUpdateTime", now.toString());
 
         const mode = localStorage.getItem("mode") || "run";
         const cycle = parseFloat(localStorage.getItem("cycle_val")) || 0;
 
         if (mode === "run") {
-        let lastPStr = localStorage.getItem("lastProductTime");
-        
-        if (!lastPStr) {
-            localStorage.setItem("lastProductTime", now.toString());
-            lastPStr = now.toString();
-        }
+            let lastPStr = localStorage.getItem("lastProductTime");
 
-        const lastP = parseInt(lastPStr);
-        const diffSeconds = (now - lastP) / 1000;
-
-        if (cycle > 0 && diffSeconds > cycle) {
-            console.log("Downtime Terdeteksi! Target:", cycle, "Actual:", diffSeconds.toFixed(2));
-            
-            if (!Swal.isVisible()) {
-                const timeStartStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                localStorage.setItem("downtime_start_time_ms", Date.now().toString());
-                localStorage.setItem("downtime_start_clock_str", timeStartStr);
-                
-                window.toggleDowntime(true); 
-                return;
+            if (!lastPStr) {
+                localStorage.setItem("lastProductTime", now.toString());
+                lastPStr = now.toString();
             }
+
+            const lastP = parseInt(lastPStr);
+            const diffSeconds = (now - lastP) / 1000;
+
+            if (cycle > 0 && diffSeconds > cycle) {
+                console.log("Downtime Terdeteksi! Target:", cycle, "Actual:", diffSeconds.toFixed(2));
+
+                if (!Swal.isVisible()) {
+                    const timeStartStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    localStorage.setItem("downtime_start_time_ms", Date.now().toString());
+                    localStorage.setItem("downtime_start_clock_str", timeStartStr);
+
+                    window.toggleDowntime(true);
+                    return;
+                }
+            }
+
+            const rt = parseInt(localStorage.getItem("runtimeTotal") || 0);
+            localStorage.setItem("runtimeTotal", (rt + elapsed).toString());
+
+        } else {
+            const dt = parseInt(localStorage.getItem("downtimeTotal") || 0);
+            localStorage.setItem("downtimeTotal", (dt + elapsed).toString());
         }
-        
-        const rt = parseInt(localStorage.getItem("runtimeTotal") || 0);
-        localStorage.setItem("runtimeTotal", (rt + elapsed).toString());
 
-    } else {
-        const dt = parseInt(localStorage.getItem("downtimeTotal") || 0);
-        localStorage.setItem("downtimeTotal", (dt + elapsed).toString());
-    }
-
-            renderAll();
-        }, 1000);
-    }
+        renderAll();
+    }, 1000);
+}
 
 function renderAll() {
     const get = (k) => localStorage.getItem(k);
@@ -620,14 +631,14 @@ function renderAll() {
         currentTarget = num(get("target")) || uphAsli || 0;
     }
 
-    let ma = mr + md; 
+    let ma = mr + md;
     const modelTotalSeconds = ma / 1000;
 
     const idealModelQty = cyc > 0 ? Math.floor(modelTotalSeconds / cyc) * qtyPallet : 0;
     localStorage.setItem("idealqty", idealModelQty);
 
     const avb = (ma > 0) ? (mr / ma) * 100 : 0;
-    
+
     let pfm = (ma > 0 && cyc > 0) ? ((mt * cyc) / (ma / 1000)) * 100 : 0;
 
     const qly = (mt > 0) ? (mg / mt) * 100 : 0;
@@ -647,21 +658,25 @@ function renderAll() {
         if (colorVal === null) return;
         let color = "transparent";
         if (colorVal >= 100) {
-            color = "#02864A"; 
+            color = "#02864A";
         } else if (colorVal > 0 && colorVal < 90) {
-            color = "#E8083E";}
-        
+            color = "#E8083E";
+        }
+
         const textColor = color === "transparent" ? "" : "white";
         const p = el.parentElement;
         if (p) {
             p.style.backgroundColor = color;
-            p.style.color = textColor;}
+            p.style.color = textColor;
+        }
         if (id === "oee") {
             const boxT = document.getElementById("box-teks");
             if (boxT && boxT.parentElement) {
                 boxT.parentElement.style.backgroundColor = color;
                 boxT.parentElement.style.color = textColor;
-        }}};
+            }
+        }
+    };
 
     const btn = document.getElementById("btn-downtime");
     const blink = document.getElementById("downtime");
@@ -672,13 +687,14 @@ function renderAll() {
     if (blink) blink.classList.toggle("warning-blink", mode === "down");
 
     const d = new Date();
-    const tglStr = String(d.getDate()).padStart(2, '0') + '/' + 
-                   String(d.getMonth() + 1).padStart(2, '0') + '/' + 
-                   d.getFullYear();
-    
+    const tglStr = String(d.getDate()).padStart(2, '0') + '/' +
+        String(d.getMonth() + 1).padStart(2, '0') + '/' +
+        d.getFullYear();
+
     const dateEl = document.getElementById("current-date");
     if (dateEl && dateEl.innerText !== tglStr) {
-        dateEl.innerText = tglStr;}
+        dateEl.innerText = tglStr;
+    }
 
     const startClock = get("model_start_clock");
     let fullTimeDisplay = "00:00:00";
@@ -686,12 +702,13 @@ function renderAll() {
         const [startH, startM] = startClock.split(":").map(Number);
         const start = new Date();
         start.setHours(startH, startM, 0, 0);
-        
+
         if (d < start) start.setDate(start.getDate() - 1);
-        
+
         let diff = d - start;
         if (diff < 0) diff = 0;
-        fullTimeDisplay = formatTime(diff);}
+        fullTimeDisplay = formatTime(diff);
+    }
 
     set("trg", currentTarget);
     set("oee", oee.toFixed(1), oee);
@@ -713,7 +730,7 @@ function renderAll() {
     const diffEl = document.getElementById("rmiqty");
     const elLine = document.getElementById("txtedt");
     const elModel = document.getElementById("typscn");
-    
+
     if (diffEl) {
         const diff = idealModelQty - mt;
         if (diff > 0) {
@@ -723,7 +740,9 @@ function renderAll() {
             diffEl.innerText = `+${Math.abs(diff)}`;
             diffEl.style.color = "#02864A";
         } else {
-            diffEl.innerText = "";}}
+            diffEl.innerText = "";
+        }
+    }
 
     if (elLine) {
         const line = get("line") || "LINE";
@@ -735,10 +754,12 @@ function renderAll() {
             elLine.innerText = "BACKEND";
         } else {
             elLine.innerText = `${shift}. GROUP ${group}, ${line}, ${machine}`.toUpperCase();
-        }}
+        }
+    }
     if (elModel) {
-        elModel.innerText = (get("model") || "OEE PROGRAM").toUpperCase();}
-    
+        elModel.innerText = (get("model") || "OEE PROGRAM").toUpperCase();
+    }
+
     localStorage.setItem("oee_val", oee.toFixed(1));
     localStorage.setItem("avb_val", avb.toFixed(1));
     localStorage.setItem("pfm_val", pfm.toFixed(1));
@@ -774,17 +795,17 @@ window.exportToExcel = async function () {
     const history = JSON.parse(localStorage.getItem("production_history") || "[]");
     const ngLogs = JSON.parse(localStorage.getItem("all_ng_logs") || "[]");
     const downtimeLogs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
-    
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('OEE Report');
-    
+
     worksheet.columns = [
-        { width: 3.8}, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }
+        { width: 3.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }, { width: 13.8 }
     ];
-   
+
     const borderThin = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
     const grayFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD3D3D3' } };
-    
+
     const alignCenter = { horizontal: 'center', vertical: 'middle', wrapText: true };
     const alignLeft = { horizontal: 'left', vertical: 'middle' };
     const alignRight = { horizontal: 'right', vertical: 'middle' };
@@ -816,16 +837,16 @@ window.exportToExcel = async function () {
     title.value = 'OEE DIGITAL REPORT';
     title.font = fontTitle;
     title.alignment = alignCenter;
-    
-    currRow += 1; 
-    worksheet.getRow(currRow).values = []; 
 
-    currRow += 1; 
+    currRow += 1;
+    worksheet.getRow(currRow).values = [];
+
+    currRow += 1;
     const cellDateLbl = worksheet.getCell(`B${currRow}`);
-    cellDateLbl.value = 'DATE'; 
+    cellDateLbl.value = 'DATE';
     cellDateLbl.font = fontGroup;
     cellDateLbl.numFormat = fmtTitikDua;
-    cellDateLbl.alignment = { horizontal: 'left', vertical: 'middle' }; 
+    cellDateLbl.alignment = { horizontal: 'left', vertical: 'middle' };
 
     worksheet.mergeCells(`C${currRow}:D${currRow}`);
     worksheet.getCell(`C${currRow}`).value = new Date().toLocaleDateString('en-GB');
@@ -833,22 +854,22 @@ window.exportToExcel = async function () {
     worksheet.getCell(`C${currRow}`).border = { bottom: { style: 'thin' } };
 
     const cellLineLbl = worksheet.getCell(`F${currRow}`);
-    cellLineLbl.value = 'LINE'; 
+    cellLineLbl.value = 'LINE';
     cellLineLbl.font = fontGroup;
     cellLineLbl.numFormat = fmtTitikDua;
-    cellLineLbl.alignment = { horizontal: 'left', vertical: 'middle' }; 
+    cellLineLbl.alignment = { horizontal: 'left', vertical: 'middle' };
 
     worksheet.mergeCells(`G${currRow}:H${currRow}`);
     worksheet.getCell(`G${currRow}`).value = localStorage.getItem('line') || "-";
     worksheet.getCell(`G${currRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     worksheet.getCell(`G${currRow}`).border = { bottom: { style: 'thin' } };
 
-    currRow += 1; 
+    currRow += 1;
     const cellCstLbl = worksheet.getCell(`B${currRow}`);
-    cellCstLbl.value = 'CUSTOMER'; 
+    cellCstLbl.value = 'CUSTOMER';
     cellCstLbl.font = fontGroup;
     cellCstLbl.numFormat = fmtTitikDua;
-    cellCstLbl.alignment = { horizontal: 'left', vertical: 'middle' }; 
+    cellCstLbl.alignment = { horizontal: 'left', vertical: 'middle' };
 
     worksheet.mergeCells(`C${currRow}:D${currRow}`);
     worksheet.getCell(`C${currRow}`).value = localStorage.getItem('cst') || "-";
@@ -856,23 +877,23 @@ window.exportToExcel = async function () {
     worksheet.getCell(`C${currRow}`).border = { bottom: { style: 'thin' } };
 
     const cellShiftLbl = worksheet.getCell(`F${currRow}`);
-    cellShiftLbl.value = 'SHIFT/GROUP'; 
+    cellShiftLbl.value = 'SHIFT/GROUP';
     cellShiftLbl.font = fontGroup;
     cellShiftLbl.numFormat = fmtTitikDua;
-    cellShiftLbl.alignment = { horizontal: 'left', vertical: 'middle' }; 
+    cellShiftLbl.alignment = { horizontal: 'left', vertical: 'middle' };
 
     worksheet.mergeCells(`G${currRow}:H${currRow}`);
     worksheet.getCell(`G${currRow}`).value = (localStorage.getItem('shift') || '-') + '/' + (localStorage.getItem('group') || '-');
     worksheet.getCell(`G${currRow}`).alignment = { horizontal: 'center', vertical: 'middle' };
     worksheet.getCell(`G${currRow}`).border = { bottom: { style: 'thin' } };
 
-    currRow += 2; 
+    currRow += 2;
 
     worksheet.mergeCells(`A${currRow}:H${currRow}`);
     const sOee = worksheet.getCell(`A${currRow}`);
     sOee.value = 'OEE'; sOee.fill = grayFill; sOee.font = fontGroup; sOee.alignment = alignCenter; sOee.border = borderThin;
-    
-    currRow += 1; 
+
+    currRow += 1;
     worksheet.mergeCells(`A${currRow}:B${currRow}`); worksheet.getCell(`A${currRow}`).value = 'OEE';
     worksheet.getCell(`C${currRow}`).value = 'QUALITY';
     worksheet.getCell(`D${currRow}`).value = 'PERFORMANCE';
@@ -885,12 +906,12 @@ window.exportToExcel = async function () {
         c.font = fontPart; c.alignment = alignCenter; c.border = borderThin;
     });
 
-    currRow += 1; 
+    currRow += 1;
     const getUI = id => {
         const txt = document.getElementById(id)?.innerText || "0";
         return txt.includes('%') ? txt : txt + '%';
     };
-    
+
     worksheet.mergeCells(`A${currRow}:B${currRow}`); worksheet.getCell(`A${currRow}`).value = getUI('oee');
     worksheet.getCell(`C${currRow}`).value = getUI('qly');
     worksheet.getCell(`D${currRow}`).value = getUI('pfm');
@@ -904,14 +925,14 @@ window.exportToExcel = async function () {
         cell.alignment = alignCenter;
         cell.border = borderThin;
     }
-    currRow += 1; 
+    currRow += 1;
 
-    currRow += 1; 
+    currRow += 1;
     worksheet.mergeCells(`A${currRow}:H${currRow}`);
     const sT = worksheet.getCell(`A${currRow}`);
     sT.value = 'TIME'; sT.fill = grayFill; sT.font = fontGroup; sT.alignment = alignCenter; sT.border = borderThin;
 
-    currRow += 1; 
+    currRow += 1;
     worksheet.getCell(`A${currRow}`).value = 'NO.';
     worksheet.mergeCells(`B${currRow}:C${currRow}`); worksheet.getCell(`B${currRow}`).value = 'FULL TIME';
     worksheet.mergeCells(`D${currRow}:E${currRow}`); worksheet.getCell(`D${currRow}`).value = 'RUNTIME';
@@ -929,9 +950,9 @@ window.exportToExcel = async function () {
     }];
 
     cleanHistory.forEach((hItem, idx) => {
-        currRow += 1; 
-        worksheet.getCell(`A${currRow}`).value =`${idx + 1}.`;
-        
+        currRow += 1;
+        worksheet.getCell(`A${currRow}`).value = `${idx + 1}.`;
+
         worksheet.mergeCells(`B${currRow}:C${currRow}`); worksheet.getCell(`B${currRow}`).value = normalizeToExcelTime(hItem.model_fulltime);
         worksheet.mergeCells(`D${currRow}:E${currRow}`); worksheet.getCell(`D${currRow}`).value = normalizeToExcelTime(hItem.model_runtime);
         worksheet.mergeCells(`F${currRow}:H${currRow}`); worksheet.getCell(`F${currRow}`).value = normalizeToExcelTime(hItem.model_downtime);
@@ -942,28 +963,28 @@ window.exportToExcel = async function () {
         }
     });
 
-    currRow += 2; 
+    currRow += 2;
 
     worksheet.mergeCells(`A${currRow}:H${currRow}`);
     const sDtSheet = worksheet.getCell(`A${currRow}`);
-    sDtSheet.value = 'DOWNTIME INFORMATION SHEET'; 
-    sDtSheet.fill = grayFill; 
-    sDtSheet.font = fontGroup; 
-    sDtSheet.alignment = alignCenter; 
+    sDtSheet.value = 'DOWNTIME INFORMATION SHEET';
+    sDtSheet.fill = grayFill;
+    sDtSheet.font = fontGroup;
+    sDtSheet.alignment = alignCenter;
     sDtSheet.border = borderThin;
 
-    currRow += 1; 
+    currRow += 1;
     worksheet.getCell(`A${currRow}`).value = 'NO.';
     worksheet.getCell(`B${currRow}`).value = 'START';
     worksheet.getCell(`C${currRow}`).value = 'STOP';
     worksheet.getCell(`D${currRow}`).value = 'TOTAL';
-    worksheet.mergeCells(`E${currRow}:H${currRow}`); 
+    worksheet.mergeCells(`E${currRow}:H${currRow}`);
     worksheet.getCell(`E${currRow}`).value = 'REMARKS / REASON';
 
     [`A${currRow}`, `B${currRow}`, `C${currRow}`, `D${currRow}`, `E${currRow}`].forEach(pos => {
         const cell = worksheet.getCell(pos);
-        cell.font = fontPart; 
-        cell.border = borderThin; 
+        cell.font = fontPart;
+        cell.border = borderThin;
         cell.alignment = alignCenter;
     });
 
@@ -972,11 +993,11 @@ window.exportToExcel = async function () {
     cleanDowntimeLogs.forEach((dataLog, idx) => {
         currRow += 1;
         worksheet.getCell(`A${currRow}`).value = `${idx + 1}.`;
-        
+
         if (dataLog) {
             worksheet.getCell(`B${currRow}`).value = normalizeToExcelTime(dataLog.start);
             worksheet.getCell(`C${currRow}`).value = normalizeToExcelTime(dataLog.end);
-            
+
             let totalDisplay = "00:00:00";
             if (dataLog.durationMs !== undefined) {
                 totalDisplay = formatTimeFromMs(dataLog.durationMs);
@@ -997,13 +1018,13 @@ window.exportToExcel = async function () {
 
         for (let col = 1; col <= 8; col++) {
             const cell = worksheet.getRow(currRow).getCell(col);
-            cell.border = borderThin; 
-            cell.font = fontIsi; 
+            cell.border = borderThin;
+            cell.font = fontIsi;
             cell.alignment = alignCenter;
         }
     });
 
-    currRow += 2; 
+    currRow += 2;
 
     worksheet.mergeCells(`A${currRow}:H${currRow}`);
     const sQty = worksheet.getCell(`A${currRow}`);
@@ -1029,14 +1050,14 @@ window.exportToExcel = async function () {
     }];
 
     cleanQtyHistory.forEach((qItem, idx) => {
-        currRow += 1; 
+        currRow += 1;
         worksheet.getCell(`A${currRow}`).value = `${idx + 1}.`;
         worksheet.getCell(`B${currRow}`).value = Number(qItem.target) || 0;
         worksheet.getCell(`C${currRow}`).value = Number(qItem.uph) || 0;
         worksheet.getCell(`D${currRow}`).value = Number(qItem.ideal) || 0;
         worksheet.getCell(`E${currRow}`).value = Number(qItem.good) || 0;
         worksheet.getCell(`F${currRow}`).value = Number(qItem.nogood) || 0;
-        
+
         worksheet.mergeCells(`G${currRow}:H${currRow}`);
         worksheet.getCell(`G${currRow}`).value = Number(qItem.total_qty) || 0;
 
@@ -1046,23 +1067,23 @@ window.exportToExcel = async function () {
         }
     });
 
-    currRow += 2; 
+    currRow += 2;
     worksheet.mergeCells(`A${currRow}:H${currRow}`);
     const sQis = worksheet.getCell(`A${currRow}`);
-    sQis.value = 'QUALITY INFORMATION SHEET'; 
+    sQis.value = 'QUALITY INFORMATION SHEET';
     sQis.fill = grayFill; sQis.font = fontGroup; sQis.alignment = alignCenter; sQis.border = borderThin;
 
     currRow += 1;
     worksheet.getCell(`A${currRow}`).value = 'NO.';
-    
-    worksheet.mergeCells(`B${currRow}:C${currRow}`); 
-    worksheet.getCell(`B${currRow}`).value = 'NG ITEM'; 
-    
-    worksheet.getCell(`D${currRow}`).value = 'LOC'; 
-    worksheet.getCell(`E${currRow}`).value = 'QTY'; 
-    
-    worksheet.mergeCells(`F${currRow}:H${currRow}`); 
-    worksheet.getCell(`F${currRow}`).value = 'REMARKS'; 
+
+    worksheet.mergeCells(`B${currRow}:C${currRow}`);
+    worksheet.getCell(`B${currRow}`).value = 'NG ITEM';
+
+    worksheet.getCell(`D${currRow}`).value = 'LOC';
+    worksheet.getCell(`E${currRow}`).value = 'QTY';
+
+    worksheet.mergeCells(`F${currRow}:H${currRow}`);
+    worksheet.getCell(`F${currRow}`).value = 'REMARKS';
 
     ['A', 'B', 'D', 'E', 'F'].forEach(col => {
         const cell = worksheet.getCell(`${col}${currRow}`);
@@ -1080,24 +1101,24 @@ window.exportToExcel = async function () {
     cleanNGLogs.forEach((dataNG, idx) => {
         currRow += 1;
         const row = worksheet.getRow(currRow);
-        
-        row.getCell(1).value = `${idx + 1}.`; 
+
+        row.getCell(1).value = `${idx + 1}.`;
         worksheet.mergeCells(`B${currRow}:C${currRow}`);
         row.getCell(2).value = dataNG ? dataNG.reason : "-";
         row.getCell(4).value = dataNG ? dataNG.loc : "-";
-        row.getCell(5).value = dataNG ? dataNG.qty : 0; 
+        row.getCell(5).value = dataNG ? dataNG.qty : 0;
         worksheet.mergeCells(`F${currRow}:H${currRow}`);
-        row.getCell(6).value = "-"; 
+        row.getCell(6).value = "-";
 
         for (let col = 1; col <= 8; col++) {
             const cell = row.getCell(col);
-            cell.border = borderThin; 
-            cell.font = fontIsi; 
+            cell.border = borderThin;
+            cell.font = fontIsi;
             cell.alignment = alignCenter;
         }
     });
 
-    currRow += 2; 
+    currRow += 2;
 
     worksheet.mergeCells(`A${currRow}:C${currRow}`);
     const sOpList = worksheet.getCell(`A${currRow}`);
@@ -1107,12 +1128,12 @@ window.exportToExcel = async function () {
     const sOutModel = worksheet.getCell(`D${currRow}`);
     sOutModel.value = 'OUTPUT MODEL'; sOutModel.fill = grayFill; sOutModel.font = fontGroup; sOutModel.alignment = alignCenter; sOutModel.border = borderThin;
 
-    currRow += 1; 
+    currRow += 1;
     worksheet.getCell(`A${currRow}`).value = 'NO.';
     worksheet.getCell(`B${currRow}`).value = 'PROCESS';
     worksheet.getCell(`C${currRow}`).value = 'NAME';
-    
-    worksheet.mergeCells(`D${currRow}:E${currRow}`); 
+
+    worksheet.mergeCells(`D${currRow}:E${currRow}`);
     worksheet.getCell(`D${currRow}`).value = 'MODEL';
     worksheet.getCell(`F${currRow}`).value = 'START';
     worksheet.getCell(`G${currRow}`).value = 'END';
@@ -1131,14 +1152,14 @@ window.exportToExcel = async function () {
     }];
 
     cleanOpHistory.forEach((opItem, idx) => {
-        currRow += 1; 
+        currRow += 1;
         worksheet.getCell(`A${currRow}`).value = `${idx + 1}.`;
         worksheet.getCell(`B${currRow}`).value = "-";
         worksheet.getCell(`C${currRow}`).value = "-";
         worksheet.mergeCells(`D${currRow}:E${currRow}`);
-        worksheet.getCell(`D${currRow}`).value = opItem.model_name; 
-        worksheet.getCell(`F${currRow}`).value = normalizeToExcelTime(opItem.model_start); 
-        worksheet.getCell(`G${currRow}`).value = normalizeToExcelTime(opItem.model_end);   
+        worksheet.getCell(`D${currRow}`).value = opItem.model_name;
+        worksheet.getCell(`F${currRow}`).value = normalizeToExcelTime(opItem.model_start);
+        worksheet.getCell(`G${currRow}`).value = normalizeToExcelTime(opItem.model_end);
         worksheet.getCell(`H${currRow}`).value = Number(opItem.good) || 0
 
         for (let col = 1; col <= 8; col++) {
@@ -1149,23 +1170,23 @@ window.exportToExcel = async function () {
 
     currRow += 2;
     let signStart = currRow;
-    
+
     [
         { titles: ['ISSUED', 'SOP'], col: 'F' },
         { titles: ['CHECKED', 'LEADER'], col: 'G' },
         { titles: ['APPROVED', 'SPV'], col: 'H' }
     ].forEach((s) => {
         const targetCol = s.col;
-        
+
         const c1 = worksheet.getCell(`${targetCol}${currRow}`);
-        c1.value = s.titles[0]; 
-        c1.font = fontGroup; 
+        c1.value = s.titles[0];
+        c1.font = fontGroup;
         c1.alignment = alignCenter;
         c1.border = borderThin;
 
         const c2 = worksheet.getCell(`${targetCol}${currRow + 4}`);
-        c2.value = s.titles[1]; 
-        c2.font = fontGroup; 
+        c2.value = s.titles[1];
+        c2.font = fontGroup;
         c2.alignment = alignCenter;
         c2.border = borderThin;
 
@@ -1186,9 +1207,9 @@ window.exportToExcel = async function () {
     const groupName = localStorage.getItem('group') || "UNK-GROUP";
     const modelName = localStorage.getItem('model') || "UNK-TYPE";
     const d = new Date();
-    const tgl = d.getDate().toString().padStart(2, '0') + '-' + 
-                (d.getMonth() + 1).toString().padStart(2, '0') + '-' + 
-                d.getFullYear();
+    const tgl = d.getDate().toString().padStart(2, '0') + '-' +
+        (d.getMonth() + 1).toString().padStart(2, '0') + '-' +
+        d.getFullYear();
     const fileName = `OEE - ${tgl} - ${shiftName} - ${groupName} - ${modelName}.xlsx`;
     const buffer = await workbook.xlsx.writeBuffer();
 
@@ -1217,13 +1238,13 @@ window.exportToExcel = async function () {
     sendToServer(dataOeeExport);
 
     saveAs(new Blob([buffer]), fileName);
-    
+
     history.pop();
     localStorage.setItem("production_history", JSON.stringify(history));
 };
 
 const SERVER_HOSTS = [
-'http://localhost:3000'  // ← ganti IP PC Utama
+    'http://localhost:3000'  // ← ganti IP PC Utama
 ];
 
 async function sendToServer(payload) {
@@ -1310,7 +1331,8 @@ function initKeyboardShortcuts() {
             if (sequence === "77788") {
                 updateQty("nogood", 1);
                 sequence = "";
-        }} else { sequence = ""; }
+            }
+        } else { sequence = ""; }
 
         switch (k) {
             case 'z': updateQty("good", 1); break;
@@ -1329,20 +1351,26 @@ function initKeyboardShortcuts() {
 function toggleSwiperAutoplay() {
     const run = swiperInstance.autoplay.running;
     run ? swiperInstance.autoplay.stop() : swiperInstance.autoplay.start();
-    Swal.fire({ 
-        toast: true, position: 'top-end', icon: run ? 'info' : 'success', 
-        title: run ? 'Stopped' : 'Started', showConfirmButton: false, timer: 1000 
+    Swal.fire({
+        toast: true, position: 'top-end', icon: run ? 'info' : 'success',
+        title: run ? 'Stopped' : 'Started', showConfirmButton: false, timer: 1000
     });
 }
 
 function getScheduleConfig() {
     return {
-        1: { 8: { start: "07:00", end: "15:00", breaks: [{s: "11:15", e: "12:00"}, {s: "13:15", e: "13:30"}] },
-             5: { start: "07:00", end: "12:00", breaks: [{s: "10:45", e: "11:00"}] }} ,
-        2: { 8: { start: "15:00", end: "23:00", breaks: [{s: "16:45", e: "17:00"}, {s: "18:30", e: "19:15"}] },
-             5: { start: "12:00", end: "17:00", breaks: [{s: "15:45", e: "16:00"}] } },
-        3: { 8: { start: "23:00", end: "07:00", breaks: [{s: "02:40", e: "03:20"}, {s: "05:10", e: "05:30"}] },
-             5: { start: "17:00", end: "22:00", breaks: [{s: "18:45", e: "19:00"}] } }
+        1: {
+            8: { start: "07:00", end: "15:00", breaks: [{ s: "11:15", e: "12:00" }, { s: "13:15", e: "13:30" }] },
+            5: { start: "07:00", end: "12:00", breaks: [{ s: "10:45", e: "11:00" }] }
+        },
+        2: {
+            8: { start: "15:00", end: "23:00", breaks: [{ s: "16:45", e: "17:00" }, { s: "18:30", e: "19:15" }] },
+            5: { start: "12:00", end: "17:00", breaks: [{ s: "15:45", e: "16:00" }] }
+        },
+        3: {
+            8: { start: "23:00", end: "07:00", breaks: [{ s: "02:40", e: "03:20" }, { s: "05:10", e: "05:30" }] },
+            5: { start: "17:00", end: "22:00", breaks: [{ s: "18:45", e: "19:00" }] }
+        }
     };
 }
 
@@ -1367,9 +1395,46 @@ window.resetData = () => Swal.fire({
     showCancelButton: true, confirmButtonText: 'Yes'
 }).then(r => { if (r.isConfirmed) { localStorage.clear(); location.reload(); } });
 
-const ws = new WebSocket('ws://192.168.58.71:8000');
-ws.onmessage = (event) => {
-    if (event.data === 'z') {
-       updateQty("good", 1);
+// ✅ WebSocket untuk menerima signal dari ESP32 via Node.js
+let ws = null;
+let wsReconnectAttempts = 0;
+const WS_MAX_RECONNECT = 5;
+const WS_RECONNECT_DELAY = 3000; // 3 detik
+
+function connectWebSocket() {
+    try {
+        ws = new WebSocket('ws://192.168.62.38:8000');
+
+        ws.onopen = () => {
+            console.log('✅ WebSocket Connected - Menunggu signal dari ESP32');
+            wsReconnectAttempts = 0; // Reset counter
+        };
+
+        ws.onmessage = (event) => {
+            console.log('📩 Signal dari Server:', event.data);
+            if (event.data === 'z') {
+                console.log('🎯 GOOD Button Diterima!');
+                updateQty("good", 1);
+            }
+        };
+
+        ws.onerror = (error) => {
+            console.error('❌ WebSocket Error:', error);
+        };
+
+        ws.onclose = () => {
+            console.warn('⚠️ WebSocket Disconnected - Mencoba reconnect...');
+            if (wsReconnectAttempts < WS_MAX_RECONNECT) {
+                wsReconnectAttempts++;
+                setTimeout(connectWebSocket, WS_RECONNECT_DELAY);
+            } else {
+                console.error('❌ WebSocket reconnect gagal setelah', WS_MAX_RECONNECT, 'kali');
+            }
+        };
+    } catch (error) {
+        console.error('❌ WebSocket initialization error:', error);
     }
-};
+}
+
+// Connect saat page load
+connectWebSocket();

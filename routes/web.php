@@ -21,3 +21,6 @@ Route::get('/page3', function () {
 use App\Http\Controllers\OeeController;
 
 Route::get('/cari-oee', [App\Http\Controllers\OeeController::class, 'cariData']);
+
+// ✅ Endpoint untuk ESP32
+Route::get('/good', [OeeController::class, 'esp32Trigger']);

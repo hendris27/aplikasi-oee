@@ -10,31 +10,31 @@ class OeeController extends Controller
 {
     public function cleanAndSearch(Request $request)
     {
-        ini_set('memory_limit', '512M'); 
+        ini_set('memory_limit', '512M');
 
         $path = public_path('import/oee-data.xlsx');
-        
+
         if (!file_exists($path)) {
             return response()->json(['error' => 'File Excel data master tidak ditemukan di folder public/import/'], 404);
         }
-        
+
         try {
             $sheets = Excel::toCollection(new MyDataImport, $path);
-            $data = $sheets[0]; 
-            
+            $data = $sheets[0];
+
             $modelCari = strtolower(trim((string)$request->query('model')));
 
             if (empty($modelCari)) {
                 return response()->json(['message' => 'Input model tidak boleh kosong'], 400);
             }
-            
+
             $result = $data->first(function ($row) use ($modelCari) {
                 return strtolower(trim((string)($row['model'] ?? ''))) === $modelCari;
             });
 
             if ($result) {
                 $rowArray = $result->toArray();
-                
+
                 $uphKey = collect(array_keys($rowArray))->first(function($key) {
                     $k = strtolower($key);
                     return str_contains($k, 'ppc_target') || str_contains($k, 'uph') || str_contains($k, 'target');
@@ -48,7 +48,7 @@ class OeeController extends Controller
 
                 return response()->json([
                     'model'    => $rowArray['model'] ?? $modelCari,
-                    'uph'      => $uphKey ? (int)($rowArray[$uphKey] ?? 0) : 0, 
+                    'uph'      => $uphKey ? (int)($rowArray[$uphKey] ?? 0) : 0,
                     'customer' => $customerKey ? ($rowArray[$customerKey] ?? '-') : '-',
                 ]);
             }
@@ -60,5 +60,21 @@ class OeeController extends Controller
                 'error' => 'Gagal membaca file Excel: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    // ✅ Endpoint untuk ESP32 - Ketika Button Diklik
+    public function esp32Trigger(Request $request)
+    {
+        // Log request dari ESP
+        \Log::info('ESP32 Button Triggered', [
+            'timestamp' => now(),
+            'ip' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'GOOD - Button diterima',
+            'timestamp' => now(),
+        ]);
     }
 }
