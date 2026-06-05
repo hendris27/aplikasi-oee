@@ -1421,7 +1421,22 @@ function connectWebSocket() {
             console.log('📩 Signal dari Server:', event.data);
             console.log('⏰ Waktu:', new Date().toLocaleTimeString());
 
-            if (event.data === 'z') {
+            let signal = event.data;
+            let signalLine = null;
+
+            try {
+                const parsed = JSON.parse(event.data);
+                signal = parsed.type;
+                signalLine = parsed.line ? String(parsed.line).trim() : null;
+            } catch (e) { }
+
+            if (signal === 'good' || signal === 'z') {
+                const webLine = String(localStorage.getItem("line") || "").trim();
+                if (signalLine && webLine && signalLine !== webLine) {
+                    console.log(`⏭️ Signal line ${signalLine} diabaikan, web line ${webLine}`);
+                    return;
+                }
+
                 // Proteksi duplikat signal dalam 200ms
                 const now = Date.now();
                 if (now - lastGoodSignalTime >= 200) {

@@ -75,10 +75,13 @@ const serverKlien = http.createServer((req, res) => {
 
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-    if (req.url === '/good' && req.method === 'GET') {
-        console.log('[KLIEN] GOOD FROM ESP32');
+    const goodUrl = new URL(req.url, 'http://localhost');
+    if (goodUrl.pathname === '/good' && req.method === 'GET') {
+        const line = goodUrl.searchParams.get('line') || '';
+        const message = line ? JSON.stringify({ type: 'good', line }) : 'z';
+        console.log(`[KLIEN] GOOD FROM ESP32${line ? ` | LINE ${line}` : ''}`);
         wss.clients.forEach(client => {
-            if (client.readyState === 1) client.send('z');
+            if (client.readyState === 1) client.send(message);
         });
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end("OK");
