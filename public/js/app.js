@@ -323,7 +323,10 @@ window.openConfig = async function () {
 
         const uphNum = form.uph || 0;
         const qty_Pallet = form.qty_Pallet || 0;
-        localStorage.setItem("cycle_val", uphNum > 0 ? ((3600 / uphNum) * qty_Pallet).toFixed(2) : "0");
+        const cycleBase = uphNum > 0 ? (3600 / uphNum).toFixed(2) : "0";
+        const cycleDisplay = uphNum > 0 ? (cycleBase * qty_Pallet).toFixed(2) : "0";
+        localStorage.setItem("cycle_val_base", cycleBase);
+        localStorage.setItem("cycle_val_display", cycleDisplay);
 
         if (!isStarted) {
             localStorage.setItem("shiftStartedFlag", "true");
@@ -573,7 +576,7 @@ function startOEE() {
         localStorage.setItem("lastModeUpdateTime", now.toString());
 
         const mode = localStorage.getItem("mode") || "run";
-        const cycle = parseFloat(localStorage.getItem("cycle_val")) || 0;
+        const cycleAlarm = parseFloat(localStorage.getItem("cycle_val_display")) || 0;
 
         if (mode === "run") {
             let lastPStr = localStorage.getItem("lastProductTime");
@@ -586,8 +589,8 @@ function startOEE() {
             const lastP = parseInt(lastPStr);
             const diffSeconds = (now - lastP) / 1000;
 
-            if (cycle > 0 && diffSeconds > cycle) {
-                console.log("Downtime Terdeteksi! Target:", cycle, "Actual:", diffSeconds.toFixed(2));
+            if (cycleAlarm > 0 && diffSeconds > cycleAlarm) {
+                console.log("Downtime Terdeteksi! Target:", cycleAlarm, "Actual:", diffSeconds.toFixed(2));
 
                 if (!Swal.isVisible()) {
                     const timeStartStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -634,12 +637,15 @@ function renderAll() {
     let ma = mr + md;
     const modelTotalSeconds = ma / 1000;
 
-    const idealModelQty = cyc > 0 ? Math.floor(modelTotalSeconds / cyc) * qtyPallet : 0;
+    const cycBase = float(get("cycle_val_base")) || cyc;
+    const cycDisplay = float(get("cycle_val_display")) || cyc;
+
+    const idealModelQty = cycDisplay > 0 ? Math.floor(modelTotalSeconds / cycDisplay) * qtyPallet : 0;
     localStorage.setItem("idealqty", idealModelQty);
 
     const avb = (ma > 0) ? (mr / ma) * 100 : 0;
 
-    let pfm = (ma > 0 && cyc > 0) ? ((mt * cyc) / (ma / 1000)) * 100 : 0;
+    let pfm = (ma > 0 && cycBase > 0) ? ((mt * cycBase) / (ma / 1000)) * 100 : 0;
 
     const qly = (mt > 0) ? (mg / mt) * 100 : 0;
     const oee = (avb * pfm * qly) / 10000;
@@ -722,7 +728,7 @@ function renderAll() {
     set("tqty", mt);
     set("iqty", idealModelQty);
     set("uph", uphAsli);
-    set("cyc", cyc.toFixed(2));
+    set("cyc", cycDisplay.toFixed(2));
     set("rcyc", get("realCycleVal") || "0.00");
 
     const runtimeEl = document.getElementById("runtime"); if (runtimeEl) runtimeEl.innerText = formatTime(mr);
@@ -1340,6 +1346,7 @@ function initKeyboardShortcuts() {
             case 'r': e.preventDefault(); window.resetData(); break;
             case 'd': e.preventDefault(); window.openConfig(); break;
             case 'e': e.preventDefault(); window.exportToExcel(); break;
+            case 'z': e.preventDefault(); window.updateQty("good", 1); break;
             case 'arrowright': if (swiperInstance) swiperInstance.slideNext(); break;
             case 'arrowleft': if (swiperInstance) swiperInstance.slidePrev(); break;
             case 'escape': e.preventDefault(); Swal.close(); break;
