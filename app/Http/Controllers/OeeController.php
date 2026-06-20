@@ -62,6 +62,51 @@ class OeeController extends Controller
         }
     }
 
+    // ✅ Endpoint untuk ambil semua model dari Excel (untuk dropdown openConfig)
+    public function modelList()
+    {
+        ini_set('memory_limit', '512M');
+
+        $path = public_path('import/oee-data.xlsx');
+
+        if (!file_exists($path)) {
+            return response()->json(['error' => 'File Excel tidak ditemukan'], 404);
+        }
+
+        try {
+            $sheets = Excel::toCollection(new MyDataImport, $path);
+            $data = $sheets[0];
+
+            $firstRow = $data->first();
+            if (!$firstRow) return response()->json([]);
+            $rowArray = $firstRow->toArray();
+
+            $uphKey = collect(array_keys($rowArray))->first(function($key) {
+                $k = strtolower($key);
+                return str_contains($k, 'ppc_target') || str_contains($k, 'uph') || str_contains($k, 'target');
+            });
+            $customerKey = collect(array_keys($rowArray))->first(function($key) {
+                $k = strtolower($key);
+                return str_contains($k, 'customer') || str_contains($k, 'cust');
+            });
+
+            $result = $data->map(function($row) use ($uphKey, $customerKey) {
+                $model = trim((string)($row['model'] ?? ''));
+                if (empty($model)) return null;
+                return [
+                    'model'    => $model,
+                    'uph'      => $uphKey ? (int)($row[$uphKey] ?? 0) : 0,
+                    'customer' => $customerKey ? trim((string)($row[$customerKey] ?? '-')) : '-',
+                ];
+            })->filter()->values();
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     // ✅ Endpoint untuk ESP32 - Ketika Button Diklik
     public function esp32Trigger(Request $request)
     {

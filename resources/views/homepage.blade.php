@@ -30,12 +30,26 @@
         </div>
 
         <div class="top-right">
-            <h6>PRODUCTION 2 - ENGINEERING 2</h6>
+            <h4>PRODUCTION 2 - ENGINEERING 2</h4>
             <div class="button-group">
-                <button onclick="openConfig()">Data</button>
-                <button onclick="resetData()">Reset</button>
-                <button onclick="exportToExcel()">Export</button>
-                <button onclick="toggleDowntime()" id="btn-downtime">Downtime</button>
+                <div class="top-right">
+                    <div class="button-group">
+                        <div class="exp">
+                            <h6>Monitor</h6>
+                            <button onclick="window.location.href='/live'">Live Monitor</button>
+                        </div>
+                        <div class="exp">
+                            <h6>Report</h6>
+                            <button onclick="window.location.href='/all'">All Data</button>
+                        </div>
+                        <div class="exp">
+                            <h6>Setting</h6>
+                            <button onclick="openConfig()">Setting</button>
+                            <button onclick="resetData()">Reset</button>
+                            <button onclick="toggleDowntime()" id="btn-downtime">Downtime</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
