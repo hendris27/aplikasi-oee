@@ -107,8 +107,6 @@ async function loadTypePresetsFromExcel() {
                     uph: String(row[indexes.uph] || '').trim()
                 };
 
-                console.log('Excel Row Parsed:', data);
-
                 if (data.type) {
                     saveTypePreset(data.type, data);
                     c++;
@@ -224,6 +222,7 @@ window.openConfig = async function () {
                 <label>Shift, Group & Planned Time:</label>
                 <div class="input-row">
                     <select id="swal-shift" class="swal2-input">
+                        <option value="auto">Auto (Sesuai Jam Sekarang)</option>
                         <option value="1" ${localStorage.getItem('shift') === '1' ? 'selected' : ''}>Shift 1</option>
                         <option value="2" ${localStorage.getItem('shift') === '2' ? 'selected' : ''}>Shift 2</option>
                         <option value="3" ${localStorage.getItem('shift') === '3' ? 'selected' : ''}>Shift 3</option>
@@ -293,19 +292,14 @@ window.openConfig = async function () {
         const timeNowStr = formatDateTime(new Date());
         const oldModel = localStorage.getItem("model");
 
-        if (isStarted && oldModel !== form.model && oldModel !== "") {
-            window.saveToHistory();
-
-            [
-                "good", "nogood", "runtimeTotal", "downtimeTotal", "realCycleVal", "idealqty"
-            ].forEach(k => localStorage.setItem(k, "0"));
-
-            localStorage.setItem("ng_logs", "[]");
-            localStorage.setItem("downtime_logs", "[]");
-            localStorage.setItem("model_start_clock", timeNowStr);
-            localStorage.setItem("lastModeUpdateTime", now.toString());
-            localStorage.setItem("lastProductTime", now.toString());
-            localStorage.setItem("mode", "run");
+        if (isStarted && oldModel && oldModel !== "" && oldModel !== form.model) {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Reset First!',
+                text: 'Cannot change the model without a reset!',
+                confirmButtonText: 'OK'
+            });
+            return;
         }
         localStorage.setItem("line", form.line);
         localStorage.setItem("machine", form.machine);
@@ -316,7 +310,12 @@ window.openConfig = async function () {
         localStorage.setItem("target", form.target);
         localStorage.setItem("cst", form.customer);
         localStorage.setItem("rawPlannedTime", form.time);
-        localStorage.setItem("shift", form.shift);
+
+        let resolvedShift = form.shift;
+        if (form.shift === 'auto') {
+            resolvedShift = String(detectShiftByTime(parseInt(form.time) || 8));
+        }
+        localStorage.setItem("shift", resolvedShift);
         localStorage.setItem("group", form.group);
         localStorage.setItem("qty_Pallet", form.qty_Pallet);
         localStorage.setItem("target_model_fixed", form.target);
@@ -331,12 +330,19 @@ window.openConfig = async function () {
         if (!isStarted) {
             localStorage.setItem("shiftStartedFlag", "true");
             localStorage.setItem("model_start_clock", timeNowStr);
+            localStorage.setItem("model_start_ms", Date.now().toString());
             localStorage.setItem("lastProductTime", now.toString());
             localStorage.setItem("lastModeUpdateTime", now.toString());
             localStorage.setItem("mode", "run");
             startOEE();
         }
-        Swal.fire({ icon: 'success', title: 'Data Saved', timer: 1000, showConfirmButton: false });
+        Swal.fire({
+            icon: 'success',
+            title: 'Data Saved',
+            text: form.shift === 'auto' ? `Shift ${resolvedShift}` : undefined,
+            timer: form.shift === 'auto' ? 1800 : 1000,
+            showConfirmButton: false
+        });
         renderAll();
     }
 };
@@ -349,12 +355,12 @@ window.toggleDowntime = async function (isAuto = false) {
     if (Swal.isVisible()) return;
 
     const reasons = [
-        "5S", "CHANGE LABEL / RIBBON", "ELECTRICAL STAGE PROBLEM", "EQUIPMENT / M/C PROBLEM", "EQUIP SOLDER PROBLEM", "FCT / ICT / LIGHT PROBLEM", "JIG / PALLET PROBLEM", "KEYENCE PROBLEM", "MATERIAL PROBLEM", "MEETING", "MP FCV OJT", "MP FV OJT", "MP INSERT OJT", "NG FCT",
+        "Not Filled In Yet", "5S", "CHANGE LABEL / RIBBON", "ELECTRICAL STAGE PROBLEM", "EQUIPMENT / M/C PROBLEM", "EQUIP SOLDER PROBLEM", "FCT / ICT / LIGHT PROBLEM", "JIG / PALLET PROBLEM", "KEYENCE PROBLEM", "MATERIAL PROBLEM", "MEETING", "MP FCV OJT", "MP FV OJT", "MP INSERT OJT", "NG FCT",
         "NG PALLET", "ODEN CHECK", "OVER CHANGE MODEL", "PREPARE LINE", "PROBLEM ALARM SELBO", "PROBLEM CGS", "PROBLEM NG TRAY", "PROBLEM SOLDERABILITY", "PROBLEM W/T SELBO / SELECTIVE", "QUALITY PROBLEM", "ROMWRITE / TAISI PROB", "SCREW PROBLEM", "TOP UP",
         "TRAINING", "TRAINING MP FCT", "TRAINING MP INSERT", "WAITING COATING/CURING", "WAITING ENGINEERING", "WAITING FCT COMMON", "WAITING MATERIAL", "WAITING PACKAGING", "WAITING PALLET", "WAITING PCB", "WAITING TEMPERATURE", "WAITING TRAY", "OTHERS (CUSTOM INPUT)"
     ];
     const reasonCategoryMap = {
-        "5S": "LOST", "CHANGE LABEL / RIBBON": "LOST", "MEETING": "LOST", "MP FCV OJT": "LOST", "MP FV OJT": "LOST", "MP INSERT OJT": "LOST", "ODEN CHECK": "LOST", "PREPARE LINE": "LOST", "TOP UP": "LOST", "TRAINING": "LOST",
+        "Not Filled In Yet": "LOST", "5S": "LOST", "CHANGE LABEL / RIBBON": "LOST", "MEETING": "LOST", "MP FCV OJT": "LOST", "MP FV OJT": "LOST", "MP INSERT OJT": "LOST", "ODEN CHECK": "LOST", "PREPARE LINE": "LOST", "TOP UP": "LOST", "TRAINING": "LOST",
         "TRAINING MP FCT": "LOST", "TRAINING MP INSERT": "LOST", "ELECTRICAL STAGE PROBLEM": "DOWN", "EQUIPMENT / M/C PROBLEM": "DOWN", "EQUIP SOLDER PROBLEM": "DOWN",
         "FCT / ICT / LIGHT PROBLEM": "DOWN", "JIG / PALLET PROBLEM": "DOWN", "KEYENCE PROBLEM": "DOWN", "MATERIAL PROBLEM": "DOWN", "NG FCT": "DOWN", "NG PALLET": "DOWN", "OVER CHANGE MODEL": "DOWN",
         "PROBLEM ALARM SELBO": "DOWN", "PROBLEM CGS": "DOWN", "PROBLEM NG TRAY": "DOWN", "PROBLEM SOLDERABILITY": "DOWN", "PROBLEM W/T SELBO / SELECTIVE": "DOWN", "QUALITY PROBLEM": "DOWN",
@@ -393,6 +399,8 @@ window.toggleDowntime = async function (isAuto = false) {
         localStorage.setItem("downtimeCategory", category);
         localStorage.setItem("downtime_start_time_ms", Date.now().toString());
         localStorage.setItem("downtime_start_clock_str", timeStartStr);
+        // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat
+        localStorage.setItem("lastModeUpdateTime", Date.now().toString());
         localStorage.setItem("mode", "down");
         console.log("Downtime dimulai:", {
             reason: final,
@@ -402,6 +410,16 @@ window.toggleDowntime = async function (isAuto = false) {
 
     } else {
         if (!isAuto) {
+            // EXIT DOWNTIME: Rebase run_start_ms agar live monitor hitung dengan base point baru
+            // Rumus: newRunStartMs = Date.now() - currentRuntimeMs
+            // Sehingga: Date.now() - newRunStartMs = currentRuntimeMs (runtime tetap sama)
+            const currentRuntimeMs = parseInt(localStorage.getItem("runtimeTotal") || 0);
+            const newRunStartMs = Date.now() - currentRuntimeMs;
+            localStorage.setItem("model_start_ms", newRunStartMs.toString());
+
+            // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat besar
+            localStorage.setItem("lastModeUpdateTime", Date.now().toString());
+
             localStorage.setItem("mode", "run");
             localStorage.removeItem("downtimeGroup");
             localStorage.removeItem("downtimeCategory");
@@ -479,6 +497,16 @@ window.updateQty = async function (key, change) {
             let start = parseInt(localStorage.getItem("lastProductTime")) || parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
             localStorage.setItem("realCycleVal", ((now - start) / 1000).toFixed(2));
             localStorage.setItem("lastProductTime", now.toString());
+            let cycleLogs = JSON.parse(localStorage.getItem("real_cycle_logs") || "[]");
+
+            cycleLogs.push(parseFloat(localStorage.getItem("realCycleVal")));
+
+            localStorage.setItem("real_cycle_logs", JSON.stringify(cycleLogs));
+
+            const avgCycle =
+                cycleLogs.reduce((a, b) => a + b, 0) / cycleLogs.length;
+
+            localStorage.setItem("realCycleAvg", avgCycle.toFixed(2));
 
             if (localStorage.getItem("mode") === "down") {
                 const dtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
@@ -491,26 +519,32 @@ window.updateQty = async function (key, change) {
                     const durationMs = dtEndMs - dtStartMs;
 
                     if (durationMs >= 1000 && dtStartClock) {
-                        let logs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
-                        logs.push({
+                        const dtRecord = {
+                            date: new Date().toISOString().split('T')[0],
+                            machine: localStorage.getItem('machine') || '-',
+                            model: localStorage.getItem("type") || '-',
+                            type: localStorage.getItem("downtimeCategory") || "DOWN",
+                            detail: reason,
+                            time: dtStartClock,
+                            period: formatTime(durationMs),
                             start: dtStartClock,
                             end: dtEndClock,
                             durationMs: durationMs,
                             reason: reason,
                             category: localStorage.getItem("downtimeCategory") || "DOWN",
-                            model: localStorage.getItem("type") || "-"
-                        });
-                        localStorage.setItem("downtime_logs", JSON.stringify(logs));
-                        const dataDowntimeRealtime = {
-                            targetFile: "DOWNTIME",
-                            machine: localStorage.getItem('machine') || "MC-TEST",
-                            model: localStorage.getItem("type") || "MODEL-TEST",
-                            type: localStorage.getItem("downtimeCategory") || "DOWN",
-                            detail: reason, // variabel 'reason' bawaan updateQty kamu
-                            time: dtStartClock, // variabel 'dtStartClock' bawaan updateQty kamu
-                            period: formatTime(durationMs) // fungsi 'formatTime' bawaan app.js kamu
+                            line: localStorage.getItem('line') || '-',
+                            tech: '', job: '', executor: '', solution: ''
                         };
-                        sendToServer(dataDowntimeRealtime);
+
+                        let logs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
+                        logs.push(dtRecord);
+                        localStorage.setItem("downtime_logs", JSON.stringify(logs));
+
+                        let allDtLogs = JSON.parse(localStorage.getItem("all_downtime_logs") || "[]");
+                        allDtLogs.push(dtRecord);
+                        localStorage.setItem("all_downtime_logs", JSON.stringify(allDtLogs));
+
+                        sendToServer('/api/save-downtime', dtRecord);
                     }
                 }
             }
@@ -526,7 +560,6 @@ window.updateQty = async function (key, change) {
         localStorage.setItem("good", g);
     }
 
-    if (Swal.isVisible()) Swal.close();
     renderAll();
 };
 
@@ -549,26 +582,37 @@ function startOEE() {
             ? (currentTime >= startMin || currentTime < endMin)
             : (currentTime >= startMin && currentTime < endMin);
 
-        let isResting = false;
-        for (const b of config.breaks) {
-            if (currentTime >= toMin(b.s) && currentTime < toMin(b.e)) {
-                isResting = true;
-                break;
-            }
-        }
+        let isResting = config.breaks.some(b => {
+            const breakStart = toMin(b.s);
+            const breakEnd = toMin(b.e);
+            return currentTime >= breakStart && currentTime < breakEnd;
+        });
+
+        window.breakDismissed = window.breakDismissed || false;
 
         if (isResting && isInsideShift) {
-            if (!breakPopup && !Swal.isVisible()) {
-                breakPopup = Swal.fire({ icon: "info", title: "BREAK TIME", allowOutsideClick: false });
+
+            if (!window.breakDismissed && !Swal.isVisible()) {
+                Swal.fire({
+                    icon: "info",
+                    title: "BREAK TIME",
+                    showConfirmButton: true,
+                    confirmButtonText: "OK",
+                    allowOutsideClick: true,
+                }).then(() => {
+                    window.breakDismissed = true;
+                });
             }
+
             renderAll();
             return;
-        } else if (breakPopup) {
-            Swal.close();
-            breakPopup = null;
         }
 
-        if (!isInsideShift) { renderAll(); return; }
+        if (!isResting) { window.breakDismissed = false; }
+        if (!isInsideShift) {
+            renderAll();
+            return;
+        }
 
         const now = Date.now();
         const lastUpd = parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
@@ -580,22 +624,25 @@ function startOEE() {
 
         if (mode === "run") {
             let lastPStr = localStorage.getItem("lastProductTime");
+            const shiftStartMs = parseInt(localStorage.getItem("model_start_ms")) || now;
 
-            if (!lastPStr) {
-                localStorage.setItem("lastProductTime", now.toString());
-                lastPStr = now.toString();
+            if (!lastPStr || parseInt(lastPStr) < shiftStartMs) {
+                localStorage.setItem("lastProductTime", shiftStartMs.toString());
+                lastPStr = shiftStartMs.toString();
             }
 
             const lastP = parseInt(lastPStr);
             const diffSeconds = (now - lastP) / 1000;
 
             if (cycleAlarm > 0 && diffSeconds > cycleAlarm) {
-                console.log("Downtime Terdeteksi! Target:", cycleAlarm, "Actual:", diffSeconds.toFixed(2));
+                console.log("Downtime Detected! Target:", cycleAlarm, "Actual:", diffSeconds.toFixed(2));
 
                 if (!Swal.isVisible()) {
-                    const timeStartStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    localStorage.setItem("downtime_start_time_ms", Date.now().toString());
-                    localStorage.setItem("downtime_start_clock_str", timeStartStr);
+                    if (localStorage.getItem("mode") !== "down") {
+                        const timeStartStr = formatDateTime(new Date());
+                        localStorage.setItem("downtime_start_time_ms", Date.now().toString());
+                        localStorage.setItem("downtime_start_clock_str", timeStartStr);
+                    }
 
                     window.toggleDowntime(true);
                     return;
@@ -648,7 +695,7 @@ function renderAll() {
     let pfm = (ma > 0 && cycBase > 0) ? ((mt * cycBase) / (ma / 1000)) * 100 : 0;
 
     const qly = (mt > 0) ? (mg / mt) * 100 : 0;
-    const oee = (avb * pfm * qly) / 10000;
+    const oee = Math.min((avb * pfm * qly) / 10000, 100);
 
     let calculatedEfc = idealModelQty > 0 ? (mg / idealModelQty) * 100 : 0;
     const efc = Math.min(calculatedEfc, 100);
@@ -702,17 +749,12 @@ function renderAll() {
         dateEl.innerText = tglStr;
     }
 
-    const startClock = get("model_start_clock");
+    const startMs = Number(localStorage.getItem("model_start_ms") || 0);
+
     let fullTimeDisplay = "00:00:00";
-    if (startClock && startClock.includes(":")) {
-        const [startH, startM] = startClock.split(":").map(Number);
-        const start = new Date();
-        start.setHours(startH, startM, 0, 0);
 
-        if (d < start) start.setDate(start.getDate() - 1);
-
-        let diff = d - start;
-        if (diff < 0) diff = 0;
+    if (startMs > 0) {
+        const diff = Date.now() - startMs;
         fullTimeDisplay = formatTime(diff);
     }
 
@@ -771,6 +813,38 @@ function renderAll() {
     localStorage.setItem("pfm_val", pfm.toFixed(1));
     localStorage.setItem("qly_val", qly.toFixed(1));
     localStorage.setItem("acv_val", acv.toFixed(1));
+    localStorage.setItem("efc_val", efc.toFixed(1));
+
+    queueLivePush({
+        line: get("line") || '-',
+        machine: get("machine") || '-',
+        model: get("model") || '-',
+        shift: get("shift") || '-',
+        group: get("group") || '-',
+        customer: get("cst") || '-',
+        mode: mode,
+        started: get("shiftStartedFlag") === "true",
+        run_start_ms: parseInt(localStorage.getItem("model_start_ms") || Date.now()),  // Real-time run time
+        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null,  // Real-time downtime
+
+        oee: oee.toFixed(1),
+        avb: avb.toFixed(1),
+        pfm: pfm.toFixed(1),
+        qly: qly.toFixed(1),
+        efc: efc.toFixed(1),
+
+        target: currentTarget,
+        iqty: idealModelQty,
+        tqty: mt,
+        good: mg,
+        ng: mn,
+
+        acv: acv.toFixed(1),
+        cyc: cycDisplay.toFixed(2),
+        rcyc: get("realCycleVal") || "0.00",
+        run_time: formatTime(mr),
+        down_time: formatTime(md)
+    });
 }
 
 window.saveToHistory = function () {
@@ -795,6 +869,39 @@ window.saveToHistory = function () {
     history.push(entry);
     localStorage.setItem("production_history", JSON.stringify(history));
 };
+
+async function saveOEEToServerOnly() {
+    const stopTimeStr = formatDateTime(new Date());
+
+    const oeeRecord = {
+        date: new Date().toISOString().split('T')[0],
+        machine: localStorage.getItem('machine') || '-',
+        operator: 'Group ' + (localStorage.getItem('group') || '-'),
+        model: localStorage.getItem('model') || '-',
+        customer: localStorage.getItem('cst') || '-',
+        shift: localStorage.getItem('shift') || '',
+        group: localStorage.getItem('group') || '',
+        line: localStorage.getItem('line') || '-',
+        start: localStorage.getItem('model_start_clock') ||
+            formatDateTime(
+                new Date(
+                    Number(localStorage.getItem('model_start_clock_ms') || 0)
+                )
+            ),
+        oee: document.getElementById('oee')?.innerText || '0%',
+        avb: document.getElementById('avb')?.innerText || '0%',
+        pfm: document.getElementById('pfm')?.innerText || '0%',
+        qly: document.getElementById('qly')?.innerText || '0%',
+        acv: document.getElementById('acv')?.innerText || '0%',
+        efc: document.getElementById('efc')?.innerText || '0%',
+        real_cycle_avg: localStorage.getItem('realCycleAvg') || '0.00',
+        good: localStorage.getItem('good') || '0',
+        ng: localStorage.getItem('nogood') || '0',
+        stop_time: stopTimeStr
+    };
+
+    await sendToServer('/api/save-oee', oeeRecord);
+}
 
 window.exportToExcel = async function () {
     if (typeof window.saveToHistory === "function") window.saveToHistory();
@@ -831,8 +938,13 @@ window.exportToExcel = async function () {
     };
 
     const normalizeToExcelTime = (timeStr) => {
-        if (!timeStr) return "-";
-        return String(timeStr).trim().replace(/\./g, ':');
+        if (!timeStr) return '-';
+
+        const str = String(timeStr).trim();
+        if (str.includes(' ')) {
+            return str.split(' ').pop();
+        }
+        return str;
     };
 
     const fmtTitikDua = '@*":"';
@@ -922,8 +1034,14 @@ window.exportToExcel = async function () {
     worksheet.getCell(`C${currRow}`).value = getUI('qly');
     worksheet.getCell(`D${currRow}`).value = getUI('pfm');
     worksheet.getCell(`E${currRow}`).value = getUI('avb');
+    const efcValue = getUI('efc');
+
+    console.log('EFC Export =', efcValue);
+
+    worksheet.getCell(`F${currRow}`).value = efcValue;
     worksheet.getCell(`F${currRow}`).value = getUI('efc');
     worksheet.mergeCells(`G${currRow}:H${currRow}`); worksheet.getCell(`G${currRow}`).value = getUI('acv');
+
 
     for (let col = 1; col <= 8; col++) {
         const cell = worksheet.getRow(currRow).getCell(col);
@@ -1221,58 +1339,51 @@ window.exportToExcel = async function () {
 
     const stopTimeStr = formatDateTime(new Date());
 
-    const dataOeeExport = {
-        targetFile: "OEE_MASTER",
-        machine: localStorage.getItem('machine') || "MC-TEST",
-        operator: "Group " + (localStorage.getItem('group') || "A"),
+    var exportDate = new Date();
+    var exportDateStr = exportDate.getFullYear() + '-' +
+        String(exportDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(exportDate.getDate()).padStart(2, '0');
+    var oeeHistory = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+    const oeeRecord = {
+        date: exportDateStr,
+        machine: localStorage.getItem('machine') || '-',
+        operator: 'Group ' + (localStorage.getItem('group') || '-'),
         model: modelName,
-        customer: localStorage.getItem('cst') || "CST-TEST",
-        start: localStorage.getItem('model_start_clock') || "00:00",
-        oee: document.getElementById('oee')?.innerText || "0%",
-        avb: document.getElementById('avb')?.innerText || "0%",
-        pfm: document.getElementById('pfm')?.innerText || "0%",
-        qly: document.getElementById('qly')?.innerText || "0%",
-        acv: document.getElementById('acv')?.innerText || "0%",
-        real_cycle: localStorage.getItem("realCycleVal") || "0.00",
-        std_cycle: parseFloat(localStorage.getItem("cycle_val") || "0").toFixed(2),
-        good: localStorage.getItem('good') || "0",
-        ng: localStorage.getItem('nogood') || "0",
-        run_time: document.getElementById("runtime")?.innerText || "00:00:00",
-        down_time: document.getElementById("downtime")?.innerText || "00:00:00",
-        stop_time: stopTimeStr
+        customer: localStorage.getItem('cst') || '-',
+        shift: localStorage.getItem('shift') || '',
+        group: localStorage.getItem('group') || '',
+        line: localStorage.getItem('line') || '-',
+        start: localStorage.getItem('model_start_clock') || '-',
+        oee: document.getElementById('oee')?.innerText || '0%',
+        avb: document.getElementById('avb')?.innerText || '0%',
+        pfm: document.getElementById('pfm')?.innerText || '0%',
+        qly: document.getElementById('qly')?.innerText || '0%',
+        acv: document.getElementById('acv')?.innerText || '0%',
+        efc: document.getElementById('efc')?.innerText || '0%',
+        avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+        std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
+        good: localStorage.getItem('good') || '0',
+        ng: localStorage.getItem('nogood') || '0',
+        run_time: document.getElementById('runtime')?.innerText || '00:00:00',
+        down_time: document.getElementById('downtime')?.innerText || '00:00:00',
+        stop_time: stopTimeStr,
+        target: localStorage.getItem('target') || '0',
+        uph: localStorage.getItem('uph_display') || '0',
+        ideal: localStorage.getItem('idealqty') || '0',
+        downtime_logs: JSON.parse(localStorage.getItem('downtime_logs') || '[]'),
+        ng_logs: JSON.parse(localStorage.getItem('all_ng_logs') || '[]'),
+        production_history: history
     };
-    sendToServer(dataOeeExport);
+    oeeHistory.push(oeeRecord);
+    localStorage.setItem('oee_export_history', JSON.stringify(oeeHistory));
+
+    sendToServer('/api/save-oee', oeeRecord);
 
     saveAs(new Blob([buffer]), fileName);
 
     history.pop();
     localStorage.setItem("production_history", JSON.stringify(history));
 };
-
-const SERVER_HOSTS = [
-    'http://localhost:3000'  // ← ganti IP PC Utama
-];
-
-async function sendToServer(payload) {
-    for (const host of SERVER_HOSTS) {
-        try {
-            const res = await fetch(`${host}/api/save-pabrik`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(4000)
-            });
-            if (res.ok) {
-                console.log(`[HTTP] Sukses ke: ${host}`);
-                return true;
-            }
-        } catch (err) {
-            console.warn(`[HTTP] Gagal ke ${host}:`, err.message);
-        }
-    }
-    console.error('[HTTP] Semua server gagal.');
-    return false;
-}
 
 function formatTime(ms) {
     const s = Math.floor(ms / 1000);
@@ -1302,21 +1413,12 @@ function startTime() {
     const dateEl = document.getElementById("current-date");
     if (dateEl) dateEl.innerText = dateStr;
 
-    const startClock = localStorage.getItem("model_start_clock");
+    const startMs = Number(localStorage.getItem("model_start_ms") || 0);
 
     let fullTime = "00:00:00";
 
-    if (startClock && startClock.includes(":")) {
-        const [h0, m0] = startClock.split(":").map(Number);
-
-        const start = new Date();
-        start.setHours(h0, m0, 0, 0);
-
-        if (now < start) start.setDate(start.getDate() - 1);
-
-        let diff = now - start;
-        if (diff < 0) diff = 0;
-
+    if (startMs > 0) {
+        const diff = Date.now() - startMs;
         fullTime = formatTime(diff);
     }
 
@@ -1363,6 +1465,37 @@ function toggleSwiperAutoplay() {
     });
 }
 
+function detectShiftByTime(hoursConfig) {
+    const now = new Date();
+    const currentTime = (now.getHours() * 60) + now.getMinutes();
+    const toMin = (timeStr) => { const [h, m] = timeStr.split(':').map(Number); return (h * 60) + m; };
+    const config = getScheduleConfig();
+    const shifts = [1, 2, 3];
+
+    for (const shift of shifts) {
+        const sc = config[shift]?.[hoursConfig];
+        if (!sc) continue;
+        const startMin = toMin(sc.start);
+        const endMin = toMin(sc.end);
+        const inRange = (startMin > endMin)
+            ? (currentTime >= startMin || currentTime < endMin)
+            : (currentTime >= startMin && currentTime < endMin);
+        if (inRange) return shift;
+    }
+
+    let closest = shifts[0];
+    let minDiff = Infinity;
+    for (const shift of shifts) {
+        const sc = config[shift]?.[hoursConfig];
+        if (!sc) continue;
+        const startMin = toMin(sc.start);
+        let diff = startMin - currentTime;
+        if (diff < 0) diff += 24 * 60;
+        if (diff < minDiff) { minDiff = diff; closest = shift; }
+    }
+    return closest;
+}
+
 function getScheduleConfig() {
     return {
         1: {
@@ -1370,7 +1503,7 @@ function getScheduleConfig() {
             5: { start: "07:00", end: "12:00", breaks: [{ s: "10:45", e: "11:00" }] }
         },
         2: {
-            8: { start: "15:00", end: "23:00", breaks: [{ s: "16:45", e: "17:00" }, { s: "18:30", e: "19:15" }] },
+            8: { start: "15:00", end: "23:00", breaks: [{ s: "17:00", e: "17:00" }, { s: "18:30", e: "19:15" }] },
             5: { start: "12:00", end: "17:00", breaks: [{ s: "15:45", e: "16:00" }] }
         },
         3: {
@@ -1396,37 +1529,213 @@ function isWorkTime() {
     return true;
 }
 
-window.resetData = () => Swal.fire({
-    title: 'Reset?', text: "Clear all data!", icon: 'warning',
-    showCancelButton: true, confirmButtonText: 'Yes'
-}).then(r => { if (r.isConfirmed) { localStorage.clear(); location.reload(); } });
+window.resetData = async function () {
+    const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
+    const result = await Swal.fire({
+        title: 'Are you sure you want to stop?', icon: 'warning',
+        showCancelButton: true, confirmButtonText: 'Yes'
+    });
+    if (!result.isConfirmed) return;
 
-// ✅ WebSocket untuk menerima signal dari ESP32 via Node.js
+    if (isStarted) {
+        // FIX 3: Flush downtime yang sedang aktif ke server sebelum reset.
+        // Tanpa ini, downtime terakhir tidak pernah tersimpan ke server jika tidak ada scan good setelahnya.
+        const activeDtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
+        if (activeDtStartMs && localStorage.getItem("mode") === "down") {
+            const activeDtEndMs = Date.now();
+            const activeDtDurationMs = activeDtEndMs - activeDtStartMs;
+            if (activeDtDurationMs >= 1000) {
+                const activeDtRecord = {
+                    date: new Date().toISOString().split('T')[0],
+                    machine: localStorage.getItem('machine') || '-',
+                    model: localStorage.getItem("type") || '-',
+                    type: localStorage.getItem("downtimeCategory") || "DOWN",
+                    detail: localStorage.getItem("downtimeGroup") || "Not Filled In Yet",
+                    time: localStorage.getItem("downtime_start_clock_str") || formatDateTime(new Date(activeDtStartMs)),
+                    period: formatTime(activeDtDurationMs),
+                    start: localStorage.getItem("downtime_start_clock_str") || formatDateTime(new Date(activeDtStartMs)),
+                    end: formatDateTime(new Date(activeDtEndMs)),
+                    durationMs: activeDtDurationMs,
+                    reason: localStorage.getItem("downtimeGroup") || "Not Filled In Yet",
+                    category: localStorage.getItem("downtimeCategory") || "DOWN",
+                    line: localStorage.getItem('line') || '-',
+                    tech: '', job: '', executor: '', solution: ''
+                };
+                let dtLogs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
+                dtLogs.push(activeDtRecord);
+                localStorage.setItem("downtime_logs", JSON.stringify(dtLogs));
+                await sendToServer('/api/save-downtime', activeDtRecord);
+                console.log('[Reset] Active downtime flushed to server:', activeDtRecord);
+            }
+        }
+
+        if (typeof window.saveToHistory === 'function') window.saveToHistory();
+        const history = JSON.parse(localStorage.getItem('production_history') || '[]');
+        const stopTimeStr = formatDateTime(new Date());
+        const exportDate = new Date();
+        const exportDateStr = exportDate.getFullYear() + '-' +
+            String(exportDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(exportDate.getDate()).padStart(2, '0');
+
+        const modelName = localStorage.getItem('model') || '-';
+        const oeeRecord = {
+            date: exportDateStr,
+            machine: localStorage.getItem('machine') || '-',
+            operator: 'Group ' + (localStorage.getItem('group') || '-'),
+            model: modelName,
+            customer: localStorage.getItem('cst') || '-',
+            shift: localStorage.getItem('shift') || '',
+            group: localStorage.getItem('group') || '',
+            line: localStorage.getItem('line') || '-',
+            start: localStorage.getItem('model_start_clock') || '-',
+            oee: document.getElementById('oee')?.innerText || '0',
+            avb: document.getElementById('avb')?.innerText || '0',
+            pfm: document.getElementById('pfm')?.innerText || '0',
+            qly: document.getElementById('qly')?.innerText || '0',
+            acv: document.getElementById('acv')?.innerText || '0',
+            efc: document.getElementById('efc')?.innerText || '0',
+            avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+            std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
+            good: localStorage.getItem('good') || '0',
+            ng: localStorage.getItem('nogood') || '0',
+            run_time: document.getElementById('runtime')?.innerText || '00:00:00',
+            down_time: document.getElementById('downtime')?.innerText || '00:00:00',
+            stop_time: stopTimeStr,
+            target: localStorage.getItem('target') || '0',
+            uph: localStorage.getItem('uph_display') || '0',
+            ideal: localStorage.getItem('idealqty') || '0',
+            downtime_logs: JSON.parse(localStorage.getItem('downtime_logs') || '[]'),
+            ng_logs: JSON.parse(localStorage.getItem('all_ng_logs') || '[]'),
+            production_history: history
+        };
+
+        var oeeHistory = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+        oeeHistory.push(oeeRecord);
+        localStorage.setItem('oee_export_history', JSON.stringify(oeeHistory));
+
+        await sendToServer('/api/save-oee', oeeRecord);
+    }
+
+    const savedExportHistory = localStorage.getItem('oee_export_history');
+    const savedTypePresets = localStorage.getItem('type_presets');
+    const lineBeingCleared = localStorage.getItem('line');
+    localStorage.clear();
+    if (savedExportHistory) localStorage.setItem('oee_export_history', savedExportHistory);
+    if (savedTypePresets) localStorage.setItem('type_presets', savedTypePresets);
+    await clearLiveStatus(lineBeingCleared);
+    location.reload();
+};
+
+// Server hosts untuk API - Auto-detect berdasarkan hostname
+const AUTO_DETECT_HOST = window.location.hostname;
+const SERVER_HOSTS = [
+    `http://${AUTO_DETECT_HOST}:4000`  // Auto: localhost atau IP server
+];
+
+// Server API untuk menyimpan data OEE dan Downtime
+async function sendToServer(endpoint, payload) {
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) {
+                console.log(`[API] Sukses ke: ${serverHost}`);
+                return true;
+            }
+        } catch (err) {
+            console.warn(`[API] Gagal ke ${serverHost}:`, err.message);
+        }
+    }
+    return false;
+}
+
+const LIVE_PUSH_INTERVAL = 2000;
+let lastLivePushTime = 0;
+let pendingLivePayload = null;
+let livePushTimer = null;
+
+function queueLivePush(payload) {
+    // Allow both started:true dan started:false untuk dikirim
+    // (server akan handle penghapusan jika started===false)
+    if (!payload.line || payload.line === '-') return;
+
+    pendingLivePayload = payload;
+    const now = Date.now();
+    const elapsed = now - lastLivePushTime;
+
+    if (elapsed >= LIVE_PUSH_INTERVAL) {
+        flushLivePush();
+    } else if (!livePushTimer) {
+        livePushTimer = setTimeout(flushLivePush, LIVE_PUSH_INTERVAL - elapsed);
+    }
+}
+
+function flushLivePush() {
+    livePushTimer = null;
+    if (!pendingLivePayload) return;
+    lastLivePushTime = Date.now();
+    sendToServer('/api/live-update', pendingLivePayload);
+}
+
+async function clearLiveStatus(lineName) {
+    if (!lineName || lineName === '-') return;
+    await sendToServer('/api/live-clear', { line: lineName });
+}
+
+async function editOnServer(endpoint, id, payload) {
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) return true;
+        } catch (e) { continue; }
+    }
+    return false;
+}
+
+async function deleteOnServer(endpoint, id) {
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}?id=${id}`, {
+                method: 'DELETE',
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) return true;
+        } catch (e) { continue; }
+    }
+    return false;
+}
+
 let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
-const WS_RECONNECT_DELAY = 3000; // 3 detik
-const WS_SERVER = 'ws://192.168.62.38:3000';
-let lastGoodSignalTime = 0; // Proteksi duplikat signal dalam 200ms
+const WS_RECONNECT_DELAY = 3000;
+// WS_SERVER akan didefinisikan di live_monitor.blade.php
+let lastGoodSignalTime = 0;
 
-window.wsStatus = 'disconnected'; // Global status
+window.wsStatus = 'disconnected';
 
 function connectWebSocket() {
-    console.log(`[WS] Connecting to: ${WS_SERVER}...`);
 
     try {
         ws = new WebSocket(WS_SERVER);
 
         ws.onopen = () => {
             window.wsStatus = 'connected';
-            console.log('✅ WebSocket Connected - Menunggu signal dari ESP32');
-            console.log('🔗 Server:', WS_SERVER);
-            wsReconnectAttempts = 0; // Reset counter
+            console.log('WebSocket Connected - Waiting for signal from ESP32');
+            console.log('Server:', WS_SERVER);
+            wsReconnectAttempts = 0;
         };
 
         ws.onmessage = (event) => {
-            console.log('📩 Signal dari Server:', event.data);
-            console.log('⏰ Waktu:', new Date().toLocaleTimeString());
 
             let signal = event.data;
             let signalLine = null;
@@ -1440,49 +1749,51 @@ function connectWebSocket() {
             if (signal === 'good' || signal === 'z') {
                 const webLine = String(localStorage.getItem("line") || "").trim();
                 if (signalLine && webLine && signalLine !== webLine) {
-                    console.log(`⏭️ Signal line ${signalLine} diabaikan, web line ${webLine}`);
+                    console.log(`Signal line ${signalLine} ignored, web line ${webLine}`);
                     return;
                 }
 
-                // Proteksi duplikat signal dalam 200ms
                 const now = Date.now();
                 if (now - lastGoodSignalTime >= 200) {
-                    console.log('🎯 GOOD Button Diterima!');
+                    console.log('GOOD Button Received!');
                     updateQty("good", 1);
                     lastGoodSignalTime = now;
                 } else {
-                    console.log('⏭️ Signal duplikat diabaikan');
+                    console.log('Duplicate signal ignored');
                 }
             }
         };
 
         ws.onerror = (error) => {
             window.wsStatus = 'error';
-            console.error('❌ WebSocket Error:', error);
+            console.error('WebSocket Error:', error);
         };
 
         ws.onclose = () => {
             window.wsStatus = 'disconnected';
-            console.warn('⚠️ WebSocket Disconnected');
+            console.warn('WebSocket Disconnected');
 
             if (wsReconnectAttempts < WS_MAX_RECONNECT) {
                 wsReconnectAttempts++;
-                console.log(`🔄 Reconnect attempt ${wsReconnectAttempts}/${WS_MAX_RECONNECT}...`);
+                console.log(`Reconnect attempt ${wsReconnectAttempts}/${WS_MAX_RECONNECT}...`);
                 setTimeout(connectWebSocket, WS_RECONNECT_DELAY);
             } else {
-                console.error('❌ WebSocket reconnect gagal setelah', WS_MAX_RECONNECT, 'kali');
+                console.error('WebSocket reconnect failed after', WS_MAX_RECONNECT, 'attempts');
             }
         };
     } catch (error) {
         window.wsStatus = 'error';
-        console.error('❌ WebSocket initialization error:', error);
+        console.error('WebSocket initialization error:', error);
     }
 }
 
-// Connect saat page load
-document.addEventListener('DOMContentLoaded', connectWebSocket);
+document.addEventListener('DOMContentLoaded', () => {
+    // Hanya connect WebSocket jika di halaman Live Monitor (WS_SERVER didefinisikan)
+    if (typeof WS_SERVER !== 'undefined') {
+        connectWebSocket();
+    }
+});
 
-// Debug function - bisa dipanggil dari console
 window.checkWsStatus = () => {
     console.log(`WebSocket Status: ${window.wsStatus}\nServer: ${WS_SERVER}`);
 };

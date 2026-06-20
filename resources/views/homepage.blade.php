@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>HOMEPAGE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="{{ asset('favicon.jpg') }}">
-    
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-    
+
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -16,6 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 </head>
+
 <body>
 
     <div class="top-bar">
@@ -30,12 +32,24 @@
         </div>
 
         <div class="top-right">
-            <h6>PRODUCTION 2 - ENGINEERING 2</h6>
-            <div class="button-group">
-                <button onclick="openConfig()">Data</button>
-                <button onclick="resetData()">Reset</button>
-                <button onclick="exportToExcel()">Export</button>
-                <button onclick="toggleDowntime()" id="btn-downtime">Downtime</button>
+            <h4>PRODUCTION 2 - ENGINEERING 2</h4>
+            <div
+                style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
+                <div class="exp">
+                    <button onclick="window.location.href='/live'">Live Monitor</button>
+                </div>
+                <div class="exp">
+                    <button onclick="window.location.href='/all'">Report</button>
+                </div>
+                <div class="exp">
+                    <button onclick="openConfig()">Setting</button>
+                </div>
+                <div class="exp">
+                    <button onclick="resetData()">Stop</button>
+                </div>
+                <div class="exp">
+                    <button onclick="toggleDowntime()" id="btn-downtime">Downtime</button>
+                </div>
             </div>
         </div>
     </div>
@@ -60,7 +74,7 @@
         </div>
     </div>
 
-<!--<div class="pageref">
+    <!--<div class="pageref">
             <div class="txt">
                 <h6>Date</h6>
                 <div id="current-date">00/00/0000</div>
@@ -74,11 +88,12 @@
             </div>
             <div class="txt">
                 <h6>Clock</h6>
-                <div id="txt-bottom">00:00:00</div> 
+                <div id="txt-bottom">00:00:00</div>
             </div>
         </div>
     </div> -->
 
     <script src="{{ asset('js/app.js') }}"></script>
 </body>
+
 </html>
