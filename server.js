@@ -3,10 +3,10 @@ const { WebSocketServer } = require('ws');
 const fs = require('fs');
 const path = require('path');
 
-const WS_PORT   = 3000;
-const API_PORT  = 4000;
+const WS_PORT = 3000;
+const API_PORT = 4000;
 
-const FILE_OEE      = path.join(__dirname, 'data_oee.json');
+const FILE_OEE = path.join(__dirname, 'data_oee.json');
 const FILE_DOWNTIME = path.join(__dirname, 'data_downtime.json');
 
 function readJSON(filePath) {
@@ -28,7 +28,7 @@ function writeJSON(filePath, data) {
     }
 }
 
-if (!fs.existsSync(FILE_OEE))      writeJSON(FILE_OEE, []);
+if (!fs.existsSync(FILE_OEE)) writeJSON(FILE_OEE, []);
 if (!fs.existsSync(FILE_DOWNTIME)) writeJSON(FILE_DOWNTIME, []);
 
 const liveStatus = {};
@@ -99,12 +99,22 @@ const apiServer = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const payload = JSON.parse(body);
-                const line = String(payload.line || '').trim();
+                let line = String(payload.line || '').trim();
                 if (!line) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: 'line wajib diisi' }));
                     return;
                 }
+
+                // FILTER: Jika started === false, DELETE dari liveStatus (jangan simpan)
+                if (payload.started === false) {
+                    if (liveStatus[line]) delete liveStatus[line];
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ status: 'ok', action: 'deleted' }));
+                    return;
+                }
+
+                payload.line = line;  // Normalize line
                 payload.lastUpdate = Date.now();
                 liveStatus[line] = payload;
 
@@ -151,7 +161,16 @@ const apiServer = http.createServer((req, res) => {
         });
         return;
     }
-    
+
+    if (pathname === '/api/live-clear-all' && req.method === 'POST') {
+        const count = Object.keys(liveStatus).length;
+        liveStatus = {};
+        console.log('[API] All live data cleared. Removed', count, 'lines');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', cleared: count }));
+        return;
+    }
+
     if (pathname === '/api/save-oee' && req.method === 'POST') {
         let body = '';
         req.on('data', chunk => { body += chunk.toString(); });
@@ -271,7 +290,7 @@ const apiServer = http.createServer((req, res) => {
                 const updated = JSON.parse(body);
                 let data = readJSON(FILE_OEE);
                 const idx = data.findIndex(r => r.id === id);
-                if (idx !== -1) { 
+                if (idx !== -1) {
                     data[idx] = Object.assign(data[idx], updated);
                     writeJSON(FILE_OEE, data);
                     console.log('[API] OEE diedit (POST):', data[idx].machine, '| Setup:', data[idx].setup_time);
@@ -280,7 +299,7 @@ const apiServer = http.createServer((req, res) => {
                 res.end(JSON.stringify({ status: 'ok', data: data[idx] }));
             } catch (e) {
                 console.error('[API] Error edit-oee POST:', e.message);
-                res.writeHead(500); 
+                res.writeHead(500);
                 res.end('Error: ' + e.message);
             }
         });
@@ -296,7 +315,7 @@ const apiServer = http.createServer((req, res) => {
                 const updated = JSON.parse(body);
                 let data = readJSON(FILE_DOWNTIME);
                 const idx = data.findIndex(r => r.id === id);
-                if (idx !== -1) { 
+                if (idx !== -1) {
                     data[idx] = Object.assign(data[idx], updated);
                     writeJSON(FILE_DOWNTIME, data);
                     console.log('[API] Downtime diedit (POST):', data[idx].machine, '| Type:', data[idx].type);
@@ -305,7 +324,7 @@ const apiServer = http.createServer((req, res) => {
                 res.end(JSON.stringify({ status: 'ok', data: data[idx] }));
             } catch (e) {
                 console.error('[API] Error edit-downtime POST:', e.message);
-                res.writeHead(500); 
+                res.writeHead(500);
                 res.end('Error: ' + e.message);
             }
         });

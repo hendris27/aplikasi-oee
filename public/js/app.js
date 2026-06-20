@@ -399,6 +399,8 @@ window.toggleDowntime = async function (isAuto = false) {
         localStorage.setItem("downtimeCategory", category);
         localStorage.setItem("downtime_start_time_ms", Date.now().toString());
         localStorage.setItem("downtime_start_clock_str", timeStartStr);
+        // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat
+        localStorage.setItem("lastModeUpdateTime", Date.now().toString());
         localStorage.setItem("mode", "down");
         console.log("Downtime dimulai:", {
             reason: final,
@@ -408,6 +410,16 @@ window.toggleDowntime = async function (isAuto = false) {
 
     } else {
         if (!isAuto) {
+            // EXIT DOWNTIME: Rebase run_start_ms agar live monitor hitung dengan base point baru
+            // Rumus: newRunStartMs = Date.now() - currentRuntimeMs
+            // Sehingga: Date.now() - newRunStartMs = currentRuntimeMs (runtime tetap sama)
+            const currentRuntimeMs = parseInt(localStorage.getItem("runtimeTotal") || 0);
+            const newRunStartMs = Date.now() - currentRuntimeMs;
+            localStorage.setItem("model_start_ms", newRunStartMs.toString());
+
+            // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat besar
+            localStorage.setItem("lastModeUpdateTime", Date.now().toString());
+
             localStorage.setItem("mode", "run");
             localStorage.removeItem("downtimeGroup");
             localStorage.removeItem("downtimeCategory");
@@ -812,6 +824,8 @@ function renderAll() {
         customer: get("cst") || '-',
         mode: mode,
         started: get("shiftStartedFlag") === "true",
+        run_start_ms: parseInt(localStorage.getItem("model_start_ms") || Date.now()),  // Real-time run time
+        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null,  // Real-time downtime
 
         oee: oee.toFixed(1),
         avb: avb.toFixed(1),
@@ -1518,7 +1532,7 @@ function isWorkTime() {
 window.resetData = async function () {
     const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
     const result = await Swal.fire({
-        title: 'Reset?', icon: 'warning',
+        title: 'Are you sure you want to stop?', icon: 'warning',
         showCancelButton: true, confirmButtonText: 'Yes'
     });
     if (!result.isConfirmed) return;
@@ -1612,22 +1626,29 @@ window.resetData = async function () {
     location.reload();
 };
 
-// Gunakan localhost agar compatible di berbagai environment
-const API_BASE = `http://localhost:4000`;
+// Server hosts untuk API - Auto-detect berdasarkan hostname
+const AUTO_DETECT_HOST = window.location.hostname;
+const SERVER_HOSTS = [
+    `http://${AUTO_DETECT_HOST}:4000`  // Auto: localhost atau IP server
+];
 
+// Server API untuk menyimpan data OEE dan Downtime
 async function sendToServer(endpoint, payload) {
-    try {
-        const res = await fetch(`${API_BASE}${endpoint}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(5000)
-        });
-        if (res.ok) {
-            return true;
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) {
+                console.log(`[API] Sukses ke: ${serverHost}`);
+                return true;
+            }
+        } catch (err) {
+            console.warn(`[API] Gagal ke ${serverHost}:`, err.message);
         }
-    } catch (e) {
-        console.warn('[API] Failed to send to server:', endpoint, e.message);
     }
     return false;
 }
@@ -1638,7 +1659,9 @@ let pendingLivePayload = null;
 let livePushTimer = null;
 
 function queueLivePush(payload) {
-    if (!payload.started || !payload.line || payload.line === '-') return;
+    // Allow both started:true dan started:false untuk dikirim
+    // (server akan handle penghapusan jika started===false)
+    if (!payload.line || payload.line === '-') return;
 
     pendingLivePayload = payload;
     const now = Date.now();
@@ -1664,32 +1687,38 @@ async function clearLiveStatus(lineName) {
 }
 
 async function editOnServer(endpoint, id, payload) {
-    try {
-        const res = await fetch(`${API_BASE}${endpoint}?id=${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-            signal: AbortSignal.timeout(5000)
-        });
-        return res.ok;
-    } catch (e) { return false; }
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) return true;
+        } catch (e) { continue; }
+    }
+    return false;
 }
 
 async function deleteOnServer(endpoint, id) {
-    try {
-        const res = await fetch(`${API_BASE}${endpoint}?id=${id}`, {
-            method: 'DELETE',
-            signal: AbortSignal.timeout(5000)
-        });
-        return res.ok;
-    } catch (e) { return false; }
+    for (const serverHost of SERVER_HOSTS) {
+        try {
+            const res = await fetch(`${serverHost}${endpoint}?id=${id}`, {
+                method: 'DELETE',
+                signal: AbortSignal.timeout(5000)
+            });
+            if (res.ok) return true;
+        } catch (e) { continue; }
+    }
+    return false;
 }
 
 let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000;
-const WS_SERVER = `ws://${SERVER_IP}:3000`;
+// WS_SERVER akan didefinisikan di live_monitor.blade.php
 let lastGoodSignalTime = 0;
 
 window.wsStatus = 'disconnected';
@@ -1758,7 +1787,12 @@ function connectWebSocket() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', connectWebSocket);
+document.addEventListener('DOMContentLoaded', () => {
+    // Hanya connect WebSocket jika di halaman Live Monitor (WS_SERVER didefinisikan)
+    if (typeof WS_SERVER !== 'undefined') {
+        connectWebSocket();
+    }
+});
 
 window.checkWsStatus = () => {
     console.log(`WebSocket Status: ${window.wsStatus}\nServer: ${WS_SERVER}`);

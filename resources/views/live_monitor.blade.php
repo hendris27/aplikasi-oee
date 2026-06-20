@@ -172,7 +172,8 @@
         }
 
         .lm-card.is-stale {
-            opacity: 0.4;
+            opacity: 1;
+            /* Tidak redup lagi */
         }
 
         .lm-card-head {
@@ -549,17 +550,21 @@
     </div>
 
     <script>
-        // Gunakan localhost agar compatible di berbagai environment
-        const API_BASE = `http://localhost:4000`;
-        const WS_SERVER = `ws://localhost:3000`;
+        // Auto-detect berdasarkan hostname
+        const AUTO_DETECT_HOST = window.location.hostname;
+        const API_BASE = `http://${AUTO_DETECT_HOST}:4000`;
+        const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
+        const lineStartTimes = {}; // Track mulai produksi setiap line
+        const linesBeingCleared = new Set(); // Track lines dalam proses clear
 
         let liveLinesMap = {};
         let cardOrder = [];
         let lmSwiper = null;
         let ws = null;
 
+        const lastPayloadRunStartMs = {}; // Track last received run_start_ms untuk detect transition
 
         function tickClock() {
             const now = new Date();
@@ -678,7 +683,8 @@
             const cardEl = document.getElementById(id);
             if (!cardEl) return;
 
-            const isDown = d.mode === 'down';
+            // isDown: check mode OR ada down_start_ms (untuk handle delay 2 detik saat klik downtime)
+            const isDown = d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0);
             const stale = (Date.now() - (d.lastUpdate || 0)) > STALE_MS;
             const status = isDown ? 'down' : statusFromOee(d.oee);
 
@@ -694,15 +700,71 @@
             document.getElementById(`${id}-qly`).textContent = parseFloat(d.qly || 0).toFixed(1);
             document.getElementById(`${id}-efc`).textContent = parseFloat(d.efc || 0).toFixed(1);
 
-            const oeeVal = parseFloat(d.oee || 0);
-            const oeeEl = document.getElementById(`${id}-oee`);
-            const oeeMain = oeeEl ? oeeEl.closest('.lm-oee-main') : null;
+            // Helper function untuk parse HH:MM:SS ke milliseconds
+            const parseTimeToMs = (timeStr) => {
+                const parts = (timeStr || '0:0:0').split(':');
+                const h = parseInt(parts[0]) || 0;
+                const m = parseInt(parts[1]) || 0;
+                const s = parseInt(parts[2]) || 0;
+                return (h * 3600 + m * 60 + s) * 1000;
+            };
 
+            // Hitung AVB, PFM, QLY, OEE real-time untuk sinkronisasi
+            let runtimeMs = 0;
+
+            // SAFEGUARD: Dual-check downtime status (mode + down_start_ms) untuk handle delay
+            // Kalau downtime, JANGAN hitung runtime real-time, gunakan frozen value
+            if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
+                // Downtime mode: runtime FROZEN
+                // Reset lineStartTimes untuk line ini agar tidak ada mismatch saat exit downtime
+                delete lineStartTimes[line];
+                delete lastPayloadRunStartMs[line];
+                runtimeMs = parseTimeToMs(d.run_time);
+            } else if (d.run_start_ms) {
+                // Normal run mode: runtime REAL-TIME dari run_start_ms
+                const payloadRunTimeMs = parseTimeToMs(d.run_time);
+                const isFirstPayload = !lastPayloadRunStartMs.hasOwnProperty(line);
+                const isTransition = isFirstPayload || (lastPayloadRunStartMs[line] !== d.run_start_ms);
+
+                if (isTransition) {
+                    // First payload atau base point changed (exit downtime): re-calibrate untuk eliminate delay offset
+                    // newBase = Date.now() - payloadRunTime memastikan even dengan delay, calculation tetap akurat
+                    lineStartTimes[line] = Date.now() - payloadRunTimeMs;
+                    lastPayloadRunStartMs[line] = d.run_start_ms;
+                    runtimeMs = payloadRunTimeMs;
+                } else {
+                    // run_start_ms stable, calculate real-time
+                    runtimeMs = Date.now() - lineStartTimes[line];
+                }
+            }
+
+            // Parse downtime dari format HH:MM:SS ke milliseconds
+            let downtimeMs = parseTimeToMs(d.down_time);
+            // Jika sedang downtime, tambahkan downtime current ke downtime sebelumnya
+            if (d.down_start_ms && d.down_start_ms > 0) {
+                // Downtime sedang berjalan: tambahkan durasi dari down_start_ms sampai sekarang
+                const currentDowntimeDurationMs = Date.now() - d.down_start_ms;
+                downtimeMs = downtimeMs + currentDowntimeDurationMs;
+            }
+
+            const totalTimeMs = runtimeMs + downtimeMs;
+
+            // Kalkulasi metrik real-time
+            const realAvb = totalTimeMs > 0 ? (runtimeMs / totalTimeMs) * 100 : 0;
+            const realQly = (d.tqty > 0) ? (d.good / d.tqty) * 100 : 0;
+            const realPfm = d.cyc && totalTimeMs > 0 ? ((d.tqty * d.cyc) / (totalTimeMs / 1000)) * 100 : 0;
+            const realOee = Math.min((realAvb * realPfm * realQly) / 10000, 100);
+
+            // Update OEE display dengan nilai real-time
+            const oeeEl = document.getElementById(`${id}-oee`);
+            if (oeeEl) oeeEl.textContent = realOee.toFixed(1);
+
+            const oeeMain = oeeEl ? oeeEl.closest('.lm-oee-main') : null;
             if (oeeMain) {
-                if (oeeVal >= 100) {
+                if (realOee >= 100) {
                     oeeMain.style.backgroundColor = '#02864A';
                     oeeMain.style.color = 'white';
-                } else if (oeeVal < 90) {
+                } else if (realOee < 90) {
                     oeeMain.style.backgroundColor = '#E8083E';
                     oeeMain.style.color = 'white';
                 } else {
@@ -729,9 +791,11 @@
                 }
             };
 
-            applyMetricColor(`${id}-avb`, d.avb);
-            applyMetricColor(`${id}-pfm`, d.pfm);
-            applyMetricColor(`${id}-qly`, d.qly);
+            // Update metrics dengan nilai real-time
+            document.getElementById(`${id}-avb`).textContent = realAvb.toFixed(1);
+            applyMetricColor(`${id}-avb`, realAvb);
+            applyMetricColor(`${id}-pfm`, realPfm);
+            applyMetricColor(`${id}-qly`, realQly);
             applyMetricColor(`${id}-efc`, d.efc);
 
             document.getElementById(`${id}-target`).textContent = parseInt(d.target || 0);
@@ -741,10 +805,59 @@
             document.getElementById(`${id}-good2`).textContent = parseInt(d.good || 0);
             document.getElementById(`${id}-ng`).textContent = parseInt(d.ng || 0);
 
-            document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
-            const downEl = document.getElementById(`${id}-down`);
-            downEl.textContent = d.down_time || '00:00:00';
-            downEl.classList.toggle('lm-blink', isDown);
+            // Hitung run time display dengan sync sama calculation logic
+            // SAFEGUARD: Gunakan dual-check mode + down_start_ms untuk handle delay
+            if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
+                // Downtime mode: runtime FROZEN
+                document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
+            } else if (d.run_start_ms) {
+                // Run mode: use same calculation logic untuk consistency
+                const payloadRunTimeMs = parseTimeToMs(d.run_time);
+                const isFirstPayload = !lastPayloadRunStartMs.hasOwnProperty(line);
+                const isTransition = isFirstPayload || (lastPayloadRunStartMs[line] !== d.run_start_ms);
+
+                if (isTransition) {
+                    // Transition atau first set: use payload (sudah re-calibrated untuk delay)
+                    const displayRunTimeMs = payloadRunTimeMs;
+                    const hours = Math.floor(displayRunTimeMs / 3600000);
+                    const mins = Math.floor((displayRunTimeMs % 3600000) / 60000);
+                    const secs = Math.floor((displayRunTimeMs % 60000) / 1000);
+                    const runTimeStr =
+                        `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    document.getElementById(`${id}-run`).textContent = runTimeStr;
+                } else {
+                    // Stable: calculate real-time (same as runtimeMs calculation)
+                    const displayRunTimeMs = Date.now() - lineStartTimes[line];
+                    const hours = Math.floor(displayRunTimeMs / 3600000);
+                    const mins = Math.floor((displayRunTimeMs % 3600000) / 60000);
+                    const secs = Math.floor((displayRunTimeMs % 60000) / 1000);
+                    const runTimeStr =
+                        `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    document.getElementById(`${id}-run`).textContent = runTimeStr;
+                }
+            } else {
+                document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
+            }
+
+            // Hitung downtime display real-time jika sedang downtime
+            if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
+                const currentDowntimeDurationMs = Date.now() - d.down_start_ms;
+                const baseDowntimeMs = parseTimeToMs(d.down_time);
+                const totalDowntimeMs = baseDowntimeMs + currentDowntimeDurationMs;
+
+                const downHours = Math.floor(totalDowntimeMs / 3600000);
+                const downMins = Math.floor((totalDowntimeMs % 3600000) / 60000);
+                const downSecs = Math.floor((totalDowntimeMs % 60000) / 1000);
+                const downTimeStr =
+                    `${String(downHours).padStart(2, '0')}:${String(downMins).padStart(2, '0')}:${String(downSecs).padStart(2, '0')}`;
+                const downEl = document.getElementById(`${id}-down`);
+                downEl.textContent = downTimeStr;
+                downEl.classList.toggle('lm-blink', true);
+            } else {
+                const downEl = document.getElementById(`${id}-down`);
+                downEl.textContent = d.down_time || '00:00:00';
+                downEl.classList.toggle('lm-blink', false);
+            }
         }
 
         function updateAllCards() {
@@ -813,16 +926,26 @@
                 const arr = await res.json();
                 liveLinesMap = {};
                 arr.forEach(d => {
-                    if (d && d.line) liveLinesMap[d.line] = d;
+                    // Skip lines yang belum started (tidak ada data untuk running)
+                    if (!d.started) return;
+
+                    // Skip lines yang sedang di-clear (jangan re-add yang sudah dihapus)
+                    // Trim line untuk prevent duplikasi karena whitespace
+                    const cleanLine = String(d.line || '').trim();
+                    if (cleanLine && !linesBeingCleared.has(cleanLine)) {
+                        liveLinesMap[cleanLine] = {
+                            ...d,
+                            line: cleanLine
+                        };
+                    }
                 });
                 render();
             } catch (e) {
-
+                console.error('loadLiveStatus error:', e);
             }
         }
 
         setInterval(updateAllCards, 1000);
-
 
         function connectWS() {
             const dot = document.getElementById('lm-ws-dot');
@@ -837,8 +960,33 @@
                 ws.onmessage = (event) => {
                     try {
                         const msg = JSON.parse(event.data);
-                        if (msg.type === 'live_update' || msg.type === 'live_clear') {
-                            loadLiveStatus();
+                        if (msg.type === 'live_update') {
+                            // Jangan load jika line sedang di-clear
+                            if (msg.line && !linesBeingCleared.has(String(msg.line).trim())) {
+                                loadLiveStatus();
+                            }
+                        } else if (msg.type === 'live_clear') {
+                            // Instant removal saat line di-clear (STOP di homepage)
+                            if (msg.line) {
+                                const cleanLine = String(msg.line).trim();
+                                linesBeingCleared.add(cleanLine);
+                                delete liveLinesMap[cleanLine];
+                                render(); // Immediately update display
+
+                                // Konfirm dengan server setelah 500ms
+                                // Untuk memastikan polling tidak membawa data lama kembali
+                                setTimeout(() => {
+                                    loadLiveStatus();
+                                    // Hapus dari tracking setelah 5 MENIT (300000ms)
+                                    // untuk prevent re-add dari polling
+                                    setTimeout(() => {
+                                        linesBeingCleared.delete(cleanLine);
+                                        console.log(
+                                            `[Clear Timeout] Line ${cleanLine} dihapus dari tracking`
+                                        );
+                                    }, 300000);
+                                }, 500);
+                            }
                         }
                     } catch (e) {}
                 };
@@ -851,9 +999,8 @@
                 ws.onerror = () => {
                     dot.classList.remove('connected');
                 };
-            } catch (e) {
-                dot.classList.remove('connected');
-                setTimeout(connectWS, 3000);
+            } catch (error) {
+                console.error('WebSocket connection error:', error);
             }
         }
 
