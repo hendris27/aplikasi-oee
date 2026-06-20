@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -22,7 +23,8 @@
             overscroll-behavior: none;
         }
 
-        html, body {
+        html,
+        body {
             height: 100%;
             background: #1C1A27;
             overflow: hidden;
@@ -71,7 +73,7 @@
             height: clamp(8px, 1vh, 10px);
             border-radius: 50%;
             background: #E8083E;
-            box-shadow: 0 0 6px rgba(0,0,0,0.4);
+            box-shadow: 0 0 6px rgba(0, 0, 0, 0.4);
             flex-shrink: 0;
         }
 
@@ -81,8 +83,15 @@
         }
 
         @keyframes lm-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.45; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.45;
+            }
         }
 
         .lm-btn-home {
@@ -103,7 +112,7 @@
             background: #FB8D1A;
             color: #F8F9FF;
         }
-        
+
         .lm-swiper {
             position: absolute;
             top: 5vh;
@@ -111,9 +120,16 @@
             width: 100%;
             height: 95vh;
         }
+
         @media (max-height: 700px) {
-            .lm-topstrip { height: 38px; }
-            .lm-swiper { top: 38px; height: calc(100% - 38px); }
+            .lm-topstrip {
+                height: 38px;
+            }
+
+            .lm-swiper {
+                top: 38px;
+                height: calc(100% - 38px);
+            }
         }
 
         .lm-slide-grid {
@@ -134,21 +150,34 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
             min-height: 0;
             min-width: 0;
         }
 
-        .lm-card.st-red   { border-left-color: #E8083E; }
-        .lm-card.st-plain { border-left-color: #555; }
-        .lm-card.st-green { border-left-color: #02864A; }
-        .lm-card.st-down  { border-left-color: #E8083E; }
+        .lm-card.st-red {
+            border-left-color: #E8083E;
+        }
 
-        .lm-card.is-stale { opacity: 0.4; }
+        .lm-card.st-plain {
+            border-left-color: #555;
+        }
+
+        .lm-card.st-green {
+            border-left-color: #02864A;
+        }
+
+        .lm-card.st-down {
+            border-left-color: #E8083E;
+        }
+
+        .lm-card.is-stale {
+            opacity: 0.4;
+        }
 
         .lm-card-head {
             padding: clamp(2px, 0.4vh, 4px) clamp(4px, 0.5vw, 7px) clamp(1px, 0.25vh, 3px);
-            border-bottom: 1px solid rgba(248,249,255,0.12);
+            border-bottom: 1px solid rgba(248, 249, 255, 0.12);
             line-height: 1.15;
             flex-shrink: 0;
         }
@@ -184,6 +213,7 @@
         .lm-card.st-critical .lm-card-badge {
             background: #E8083E;
         }
+
         .lm-card.is-stale .lm-card-badge {
             background: #6b6b6b;
         }
@@ -213,7 +243,7 @@
             flex-shrink: 0;
             text-align: center;
         }
-        
+
         .lm-oee-row .lm-oee-main {
             grid-column: 1 / -1;
             display: flex;
@@ -222,7 +252,7 @@
             gap: 3px;
             border-radius: 4px;
         }
-        
+
         .lm-oee-row .lm-oee-main .lm-oee-label {
             font-size: clamp(8px, 1vw, 11px);
             opacity: 0.75;
@@ -241,7 +271,7 @@
         }
 
         .lm-oee-row .lm-metric-item {
-            background: rgba(248,249,255,0.06);
+            background: rgba(248, 249, 255, 0.06);
             border-radius: 4px;
             padding: 4px 0;
             min-width: 0;
@@ -267,7 +297,7 @@
         }
 
         .lm-metric-grid .lm-metric-item {
-            background: rgba(248,249,255,0.06);
+            background: rgba(248, 249, 255, 0.06);
             border-radius: 4px;
             padding: 4px 0;
             min-width: 0;
@@ -284,7 +314,7 @@
             font-size: clamp(11px, 1.4vw, 15px);
             font-weight: bold;
         }
-        
+
         .lm-prod-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -297,7 +327,7 @@
 
         .lm-prod-grid .lm-prod-item {
             min-width: 0;
-            background: rgba(248,249,255,0.04);
+            background: rgba(248, 249, 255, 0.04);
             border-radius: 4px;
             padding: 3px 0;
         }
@@ -323,7 +353,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 3px;
-            border-top: 1px solid rgba(248,249,255,0.1);
+            border-top: 1px solid rgba(248, 249, 255, 0.1);
             padding-top: clamp(2px, 0.6vh, 6px);
             flex-shrink: 0;
         }
@@ -352,9 +382,11 @@
         }
 
         @keyframes lm-blinker {
-            50% { opacity: 0.25; }
+            50% {
+                opacity: 0.25;
+            }
         }
-        
+
         .lm-card-empty {
             background: rgba(248, 249, 255, 0.03);
             border: 1px dashed rgba(248, 249, 255, 0.12);
@@ -386,7 +418,7 @@
             padding: 0 20px;
         }
 
-        
+
         .swiper-pagination-bullet {
             background: #F8F9FF !important;
             opacity: 0.4;
@@ -397,7 +429,8 @@
             opacity: 1;
         }
 
-        .swiper-button-next, .swiper-button-prev {
+        .swiper-button-next,
+        .swiper-button-prev {
             color: #F8F9FF !important;
             transform: scale(0.7);
         }
@@ -408,7 +441,7 @@
                 grid-template-rows: repeat(4, 1fr);
             }
         }
-        
+
         .lm-topstrip .lm-clock {
             font-size: clamp(21px, 2.7vh, 33px);
         }
@@ -486,6 +519,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="lm-topstrip">
@@ -501,7 +535,7 @@
 
     <div class="lm-swiper swiper" id="lm-swiper">
         <div class="swiper-wrapper" id="lm-swiper-wrapper">
-            
+
         </div>
         <div class="swiper-pagination"></div>
         <div class="swiper-button-prev"></div>
@@ -510,20 +544,21 @@
 
     <div class="lm-no-data" id="lm-no-data" style="display:none;">
         <div>Belum ada line yang aktif mengirim data live.</div>
-        <div style="font-size:0.7em; opacity:0.7;">Mulai produksi di halaman line (Setting &rarr; Start Production) untuk muncul di sini.</div>
+        <div style="font-size:0.7em; opacity:0.7;">Mulai produksi di halaman line (Setting &rarr; Start Production)
+            untuk muncul di sini.</div>
     </div>
 
     <script>
-        const SERVER_IP   = '192.168.58.84';
-        const API_BASE    = `http://${SERVER_IP}:4000`;
-        const WS_SERVER   = `ws://${SERVER_IP}:3000`;
-        const CARDS_PER_SLIDE = 14; 
-        const STALE_MS    = 30000;
+        // Gunakan localhost agar compatible di berbagai environment
+        const API_BASE = `http://localhost:4000`;
+        const WS_SERVER = `ws://localhost:3000`;
+        const CARDS_PER_SLIDE = 14;
+        const STALE_MS = 30000;
 
-        let liveLinesMap = {};   
-        let cardOrder    = [];   
-        let lmSwiper     = null;
-        let ws           = null;
+        let liveLinesMap = {};
+        let cardOrder = [];
+        let lmSwiper = null;
+        let ws = null;
 
 
         function tickClock() {
@@ -537,14 +572,18 @@
         function statusFromOee(oee) {
             const v = parseFloat(oee) || 0;
             if (v >= 100) return 'green';
-            if (v >= 90)  return 'plain';
+            if (v >= 90) return 'plain';
             return 'red';
         }
 
         function escapeHtml(str) {
             return String(str ?? '-').replace(/[&<>"']/g, c => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-            }[c]));
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            } [c]));
         }
 
         function safeId(line) {
@@ -640,22 +679,23 @@
             if (!cardEl) return;
 
             const isDown = d.mode === 'down';
-            const stale  = (Date.now() - (d.lastUpdate || 0)) > STALE_MS;
+            const stale = (Date.now() - (d.lastUpdate || 0)) > STALE_MS;
             const status = isDown ? 'down' : statusFromOee(d.oee);
 
             cardEl.className = `lm-card st-${status}${stale ? ' is-stale' : ''}`;
 
-            document.getElementById(`${id}-line`).textContent  = d.line || '-';
-            document.getElementById(`${id}-sub1`).textContent  = `${d.machine || '-'} · ${d.model || '-'}`;
-            document.getElementById(`${id}-sub2`).textContent  = `Shift ${d.shift || '-'} · Group ${d.group || '-'} · ${d.customer || '-'}`;
+            document.getElementById(`${id}-line`).textContent = d.line || '-';
+            document.getElementById(`${id}-sub1`).textContent = `${d.machine || '-'} · ${d.model || '-'}`;
+            document.getElementById(`${id}-sub2`).textContent =
+                `Shift ${d.shift || '-'} · Group ${d.group || '-'} · ${d.customer || '-'}`;
             document.getElementById(`${id}-badge`).textContent = isDown ? 'DOWN' : (stale ? 'NO SIG' : 'RUN');
-            document.getElementById(`${id}-avb`).textContent   = parseFloat(d.avb || 0).toFixed(1);
-            document.getElementById(`${id}-pfm`).textContent   = parseFloat(d.pfm || 0).toFixed(1);
-            document.getElementById(`${id}-qly`).textContent   = parseFloat(d.qly || 0).toFixed(1);
-            document.getElementById(`${id}-efc`).textContent   = parseFloat(d.efc || 0).toFixed(1);
-            
+            document.getElementById(`${id}-avb`).textContent = parseFloat(d.avb || 0).toFixed(1);
+            document.getElementById(`${id}-pfm`).textContent = parseFloat(d.pfm || 0).toFixed(1);
+            document.getElementById(`${id}-qly`).textContent = parseFloat(d.qly || 0).toFixed(1);
+            document.getElementById(`${id}-efc`).textContent = parseFloat(d.efc || 0).toFixed(1);
+
             const oeeVal = parseFloat(d.oee || 0);
-            const oeeEl  = document.getElementById(`${id}-oee`);
+            const oeeEl = document.getElementById(`${id}-oee`);
             const oeeMain = oeeEl ? oeeEl.closest('.lm-oee-main') : null;
 
             if (oeeMain) {
@@ -695,13 +735,13 @@
             applyMetricColor(`${id}-efc`, d.efc);
 
             document.getElementById(`${id}-target`).textContent = parseInt(d.target || 0);
-            document.getElementById(`${id}-tqty`).textContent   = parseInt(d.tqty || 0);
-            document.getElementById(`${id}-iqty`).textContent   = parseInt(d.iqty || 0);
-            document.getElementById(`${id}-good`).textContent   = parseInt(d.good || 0);
-            document.getElementById(`${id}-good2`).textContent   = parseInt(d.good || 0);
-            document.getElementById(`${id}-ng`).textContent     = parseInt(d.ng || 0);
+            document.getElementById(`${id}-tqty`).textContent = parseInt(d.tqty || 0);
+            document.getElementById(`${id}-iqty`).textContent = parseInt(d.iqty || 0);
+            document.getElementById(`${id}-good`).textContent = parseInt(d.good || 0);
+            document.getElementById(`${id}-good2`).textContent = parseInt(d.good || 0);
+            document.getElementById(`${id}-ng`).textContent = parseInt(d.ng || 0);
 
-            document.getElementById(`${id}-run`).textContent  = d.run_time || '00:00:00';
+            document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
             const downEl = document.getElementById(`${id}-down`);
             downEl.textContent = d.down_time || '00:00:00';
             downEl.classList.toggle('lm-blink', isDown);
@@ -712,16 +752,18 @@
         }
 
         function rebuildSkeletonIfNeeded() {
-            const newOrder = Object.keys(liveLinesMap).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+            const newOrder = Object.keys(liveLinesMap).sort((a, b) => a.localeCompare(b, undefined, {
+                numeric: true
+            }));
             const changed = newOrder.length !== cardOrder.length ||
-                            newOrder.some((line, i) => line !== cardOrder[i]);
+                newOrder.some((line, i) => line !== cardOrder[i]);
 
             if (!changed) return false;
 
             cardOrder = newOrder;
 
-            const wrapper  = document.getElementById('lm-swiper-wrapper');
-            const noData   = document.getElementById('lm-no-data');
+            const wrapper = document.getElementById('lm-swiper-wrapper');
+            const noData = document.getElementById('lm-no-data');
             const swiperEl = document.getElementById('lm-swiper');
 
             if (!cardOrder.length) {
@@ -764,11 +806,15 @@
 
         async function loadLiveStatus() {
             try {
-                const res = await fetch(`${API_BASE}/api/live-status`, { signal: AbortSignal.timeout(5000) });
+                const res = await fetch(`${API_BASE}/api/live-status`, {
+                    signal: AbortSignal.timeout(5000)
+                });
                 if (!res.ok) throw new Error('fetch failed');
                 const arr = await res.json();
                 liveLinesMap = {};
-                arr.forEach(d => { if (d && d.line) liveLinesMap[d.line] = d; });
+                arr.forEach(d => {
+                    if (d && d.line) liveLinesMap[d.line] = d;
+                });
                 render();
             } catch (e) {
 
@@ -820,7 +866,10 @@
                 observeParents: true,
                 touchRatio: 1,
                 simulateTouch: true,
-                pagination: { el: '.swiper-pagination', clickable: true },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true
+                },
                 navigation: {
                     nextEl: '.swiper-button-next',
                     prevEl: '.swiper-button-prev'
@@ -837,13 +886,15 @@
         document.addEventListener('gesturechange', e => e.preventDefault());
         document.addEventListener('gestureend', e => e.preventDefault());
 
-        document.addEventListener('wheel', function (e) {
+        document.addEventListener('wheel', function(e) {
             if (e.ctrlKey) {
                 e.preventDefault();
             }
-        }, { passive: false });
+        }, {
+            passive: false
+        });
 
-        document.addEventListener('keydown', function (e) {
+        document.addEventListener('keydown', function(e) {
             if (
                 (e.ctrlKey && ['+', '-', '=', '0'].includes(e.key)) ||
                 (e.ctrlKey && e.key.toLowerCase() === 'add') ||
@@ -855,4 +906,5 @@
     </script>
 
 </body>
+
 </html>

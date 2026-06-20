@@ -360,7 +360,7 @@ window.toggleDowntime = async function (isAuto = false) {
         "TRAINING", "TRAINING MP FCT", "TRAINING MP INSERT", "WAITING COATING/CURING", "WAITING ENGINEERING", "WAITING FCT COMMON", "WAITING MATERIAL", "WAITING PACKAGING", "WAITING PALLET", "WAITING PCB", "WAITING TEMPERATURE", "WAITING TRAY", "OTHERS (CUSTOM INPUT)"
     ];
     const reasonCategoryMap = {
-        "Not Filled In Yet": "LOST","5S": "LOST", "CHANGE LABEL / RIBBON": "LOST", "MEETING": "LOST", "MP FCV OJT": "LOST", "MP FV OJT": "LOST", "MP INSERT OJT": "LOST", "ODEN CHECK": "LOST", "PREPARE LINE": "LOST", "TOP UP": "LOST", "TRAINING": "LOST",
+        "Not Filled In Yet": "LOST", "5S": "LOST", "CHANGE LABEL / RIBBON": "LOST", "MEETING": "LOST", "MP FCV OJT": "LOST", "MP FV OJT": "LOST", "MP INSERT OJT": "LOST", "ODEN CHECK": "LOST", "PREPARE LINE": "LOST", "TOP UP": "LOST", "TRAINING": "LOST",
         "TRAINING MP FCT": "LOST", "TRAINING MP INSERT": "LOST", "ELECTRICAL STAGE PROBLEM": "DOWN", "EQUIPMENT / M/C PROBLEM": "DOWN", "EQUIP SOLDER PROBLEM": "DOWN",
         "FCT / ICT / LIGHT PROBLEM": "DOWN", "JIG / PALLET PROBLEM": "DOWN", "KEYENCE PROBLEM": "DOWN", "MATERIAL PROBLEM": "DOWN", "NG FCT": "DOWN", "NG PALLET": "DOWN", "OVER CHANGE MODEL": "DOWN",
         "PROBLEM ALARM SELBO": "DOWN", "PROBLEM CGS": "DOWN", "PROBLEM NG TRAY": "DOWN", "PROBLEM SOLDERABILITY": "DOWN", "PROBLEM W/T SELBO / SELECTIVE": "DOWN", "QUALITY PROBLEM": "DOWN",
@@ -567,8 +567,8 @@ function startOEE() {
         const endMin = toMin(config.end);
 
         let isInsideShift = (startMin > endMin)
-    ? (currentTime >= startMin || currentTime < endMin)
-    : (currentTime >= startMin && currentTime < endMin);
+            ? (currentTime >= startMin || currentTime < endMin)
+            : (currentTime >= startMin && currentTime < endMin);
 
         let isResting = config.breaks.some(b => {
             const breakStart = toMin(b.s);
@@ -596,10 +596,11 @@ function startOEE() {
             return;
         }
 
-        if (!isResting) {window.breakDismissed = false;}
+        if (!isResting) { window.breakDismissed = false; }
         if (!isInsideShift) {
             renderAll();
-            return;}
+            return;
+        }
 
         const now = Date.now();
         const lastUpd = parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
@@ -803,14 +804,14 @@ function renderAll() {
     localStorage.setItem("efc_val", efc.toFixed(1));
 
     queueLivePush({
-        line:     get("line") || '-',
-        machine:  get("machine") || '-',
-        model:    get("model") || '-',
-        shift:    get("shift") || '-',
-        group:    get("group") || '-',
+        line: get("line") || '-',
+        machine: get("machine") || '-',
+        model: get("model") || '-',
+        shift: get("shift") || '-',
+        group: get("group") || '-',
         customer: get("cst") || '-',
-        mode:     mode,
-        started:  get("shiftStartedFlag") === "true",
+        mode: mode,
+        started: get("shiftStartedFlag") === "true",
 
         oee: oee.toFixed(1),
         avb: avb.toFixed(1),
@@ -819,15 +820,15 @@ function renderAll() {
         efc: efc.toFixed(1),
 
         target: currentTarget,
-        iqty:   idealModelQty,
-        tqty:   mt,
-        good:   mg,
-        ng:     mn,
+        iqty: idealModelQty,
+        tqty: mt,
+        good: mg,
+        ng: mn,
 
-        acv:      acv.toFixed(1),
-        cyc:      cycDisplay.toFixed(2),
-        rcyc:     get("realCycleVal") || "0.00",
-        run_time:  formatTime(mr),
+        acv: acv.toFixed(1),
+        cyc: cycDisplay.toFixed(2),
+        rcyc: get("realCycleVal") || "0.00",
+        run_time: formatTime(mr),
         down_time: formatTime(md)
     });
 }
@@ -1026,7 +1027,7 @@ window.exportToExcel = async function () {
     worksheet.getCell(`F${currRow}`).value = efcValue;
     worksheet.getCell(`F${currRow}`).value = getUI('efc');
     worksheet.mergeCells(`G${currRow}:H${currRow}`); worksheet.getCell(`G${currRow}`).value = getUI('acv');
-    
+
 
     for (let col = 1; col <= 8; col++) {
         const cell = worksheet.getRow(currRow).getCell(col);
@@ -1326,37 +1327,37 @@ window.exportToExcel = async function () {
 
     var exportDate = new Date();
     var exportDateStr = exportDate.getFullYear() + '-' +
-        String(exportDate.getMonth()+1).padStart(2,'0') + '-' +
-        String(exportDate.getDate()).padStart(2,'0');
+        String(exportDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(exportDate.getDate()).padStart(2, '0');
     var oeeHistory = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
     const oeeRecord = {
         date: exportDateStr,
-        machine:    localStorage.getItem('machine') || '-',
-        operator:   'Group ' + (localStorage.getItem('group') || '-'),
-        model:      modelName,
-        customer:   localStorage.getItem('cst') || '-',
-        shift:      localStorage.getItem('shift') || '',
-        group:      localStorage.getItem('group') || '',
-        line:       localStorage.getItem('line') || '-',
-        start:      localStorage.getItem('model_start_clock') || '-',
-        oee:        document.getElementById('oee')?.innerText || '0%',
-        avb:        document.getElementById('avb')?.innerText || '0%',
-        pfm:        document.getElementById('pfm')?.innerText || '0%',
-        qly:        document.getElementById('qly')?.innerText || '0%',
-        acv:        document.getElementById('acv')?.innerText || '0%',
-        efc:        document.getElementById('efc')?.innerText || '0%',
-        avg_cycle:  localStorage.getItem('realCycleAvg') || '0.00',
-        std_cycle:  parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
-        good:       localStorage.getItem('good') || '0',
-        ng:         localStorage.getItem('nogood') || '0',
-        run_time:   document.getElementById('runtime')?.innerText  || '00:00:00',
-        down_time:  document.getElementById('downtime')?.innerText || '00:00:00',
-        stop_time:  stopTimeStr,
-        target:     localStorage.getItem('target') || '0',
-        uph:        localStorage.getItem('uph_display') || '0',
-        ideal:      localStorage.getItem('idealqty') || '0',
+        machine: localStorage.getItem('machine') || '-',
+        operator: 'Group ' + (localStorage.getItem('group') || '-'),
+        model: modelName,
+        customer: localStorage.getItem('cst') || '-',
+        shift: localStorage.getItem('shift') || '',
+        group: localStorage.getItem('group') || '',
+        line: localStorage.getItem('line') || '-',
+        start: localStorage.getItem('model_start_clock') || '-',
+        oee: document.getElementById('oee')?.innerText || '0%',
+        avb: document.getElementById('avb')?.innerText || '0%',
+        pfm: document.getElementById('pfm')?.innerText || '0%',
+        qly: document.getElementById('qly')?.innerText || '0%',
+        acv: document.getElementById('acv')?.innerText || '0%',
+        efc: document.getElementById('efc')?.innerText || '0%',
+        avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+        std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
+        good: localStorage.getItem('good') || '0',
+        ng: localStorage.getItem('nogood') || '0',
+        run_time: document.getElementById('runtime')?.innerText || '00:00:00',
+        down_time: document.getElementById('downtime')?.innerText || '00:00:00',
+        stop_time: stopTimeStr,
+        target: localStorage.getItem('target') || '0',
+        uph: localStorage.getItem('uph_display') || '0',
+        ideal: localStorage.getItem('idealqty') || '0',
         downtime_logs: JSON.parse(localStorage.getItem('downtime_logs') || '[]'),
-        ng_logs:       JSON.parse(localStorage.getItem('all_ng_logs')   || '[]'),
+        ng_logs: JSON.parse(localStorage.getItem('all_ng_logs') || '[]'),
         production_history: history
     };
     oeeHistory.push(oeeRecord);
@@ -1514,7 +1515,7 @@ function isWorkTime() {
     return true;
 }
 
-window.resetData = async function() {
+window.resetData = async function () {
     const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
     const result = await Swal.fire({
         title: 'Reset?', icon: 'warning',
@@ -1555,42 +1556,42 @@ window.resetData = async function() {
         }
 
         if (typeof window.saveToHistory === 'function') window.saveToHistory();
-        const history   = JSON.parse(localStorage.getItem('production_history') || '[]');
+        const history = JSON.parse(localStorage.getItem('production_history') || '[]');
         const stopTimeStr = formatDateTime(new Date());
-        const exportDate  = new Date();
+        const exportDate = new Date();
         const exportDateStr = exportDate.getFullYear() + '-' +
-            String(exportDate.getMonth()+1).padStart(2,'0') + '-' +
-            String(exportDate.getDate()).padStart(2,'0');
+            String(exportDate.getMonth() + 1).padStart(2, '0') + '-' +
+            String(exportDate.getDate()).padStart(2, '0');
 
         const modelName = localStorage.getItem('model') || '-';
         const oeeRecord = {
-            date:       exportDateStr,
-            machine:    localStorage.getItem('machine')  || '-',
-            operator:   'Group ' + (localStorage.getItem('group') || '-'),
-            model:      modelName,
-            customer:   localStorage.getItem('cst')      || '-',
-            shift:      localStorage.getItem('shift')    || '',
-            group:      localStorage.getItem('group')    || '',
-            line:       localStorage.getItem('line')     || '-',
-            start:      localStorage.getItem('model_start_clock') || '-',
-            oee:        document.getElementById('oee')?.innerText  || '0',
-            avb:        document.getElementById('avb')?.innerText  || '0',
-            pfm:        document.getElementById('pfm')?.innerText  || '0',
-            qly:        document.getElementById('qly')?.innerText  || '0',
-            acv:        document.getElementById('acv')?.innerText  || '0',
-            efc:        document.getElementById('efc')?.innerText  || '0',
-            avg_cycle:  localStorage.getItem('realCycleAvg') || '0.00',
-            std_cycle:  parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
-            good:       localStorage.getItem('good')     || '0',
-            ng:         localStorage.getItem('nogood')   || '0',
-            run_time:   document.getElementById('runtime')?.innerText   || '00:00:00',
-            down_time:  document.getElementById('downtime')?.innerText  || '00:00:00',
-            stop_time:  stopTimeStr,
-            target:     localStorage.getItem('target')   || '0',
-            uph:        localStorage.getItem('uph_display') || '0',
-            ideal:      localStorage.getItem('idealqty') || '0',
+            date: exportDateStr,
+            machine: localStorage.getItem('machine') || '-',
+            operator: 'Group ' + (localStorage.getItem('group') || '-'),
+            model: modelName,
+            customer: localStorage.getItem('cst') || '-',
+            shift: localStorage.getItem('shift') || '',
+            group: localStorage.getItem('group') || '',
+            line: localStorage.getItem('line') || '-',
+            start: localStorage.getItem('model_start_clock') || '-',
+            oee: document.getElementById('oee')?.innerText || '0',
+            avb: document.getElementById('avb')?.innerText || '0',
+            pfm: document.getElementById('pfm')?.innerText || '0',
+            qly: document.getElementById('qly')?.innerText || '0',
+            acv: document.getElementById('acv')?.innerText || '0',
+            efc: document.getElementById('efc')?.innerText || '0',
+            avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+            std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
+            good: localStorage.getItem('good') || '0',
+            ng: localStorage.getItem('nogood') || '0',
+            run_time: document.getElementById('runtime')?.innerText || '00:00:00',
+            down_time: document.getElementById('downtime')?.innerText || '00:00:00',
+            stop_time: stopTimeStr,
+            target: localStorage.getItem('target') || '0',
+            uph: localStorage.getItem('uph_display') || '0',
+            ideal: localStorage.getItem('idealqty') || '0',
             downtime_logs: JSON.parse(localStorage.getItem('downtime_logs') || '[]'),
-            ng_logs:       JSON.parse(localStorage.getItem('all_ng_logs')   || '[]'),
+            ng_logs: JSON.parse(localStorage.getItem('all_ng_logs') || '[]'),
             production_history: history
         };
 
@@ -1602,17 +1603,17 @@ window.resetData = async function() {
     }
 
     const savedExportHistory = localStorage.getItem('oee_export_history');
-    const savedTypePresets   = localStorage.getItem('type_presets');
-    const lineBeingCleared   = localStorage.getItem('line');
+    const savedTypePresets = localStorage.getItem('type_presets');
+    const lineBeingCleared = localStorage.getItem('line');
     localStorage.clear();
     if (savedExportHistory) localStorage.setItem('oee_export_history', savedExportHistory);
-    if (savedTypePresets)   localStorage.setItem('type_presets', savedTypePresets);
+    if (savedTypePresets) localStorage.setItem('type_presets', savedTypePresets);
     await clearLiveStatus(lineBeingCleared);
     location.reload();
 };
 
-const SERVER_IP = '192.168.58.84';
-const API_BASE  = `http://${SERVER_IP}:4000`;
+// Gunakan localhost agar compatible di berbagai environment
+const API_BASE = `http://localhost:4000`;
 
 async function sendToServer(endpoint, payload) {
     try {
@@ -1687,7 +1688,7 @@ async function deleteOnServer(endpoint, id) {
 let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
-const WS_RECONNECT_DELAY = 3000; 
+const WS_RECONNECT_DELAY = 3000;
 const WS_SERVER = `ws://${SERVER_IP}:3000`;
 let lastGoodSignalTime = 0;
 
