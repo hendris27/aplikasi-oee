@@ -33,6 +33,11 @@ if (!fs.existsSync(FILE_DOWNTIME)) writeJSON(FILE_DOWNTIME, []);
 
 const liveStatus = {};
 
+// ⏳ Log setiap 10 detik bahwa server waiting untuk ESP
+setInterval(() => {
+    console.log(`[⏳ WAITING] Server ready - ${new Date().toLocaleTimeString()} - Menunggu signal dari ESP32...`);
+}, 10000);
+
 // ── SERVER WEBSOCKET (signal dari ESP32) port 3000 ──────────────
 const wsServer = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -92,6 +97,10 @@ wss.on('connection', (ws) => {
 
 wsServer.listen(WS_PORT, '0.0.0.0', () => {
     console.log('[WS] WebSocket + ESP32 berjalan di port', WS_PORT);
+    console.log('================================================');
+    console.log('[⏳ WAITING FOR ESP SIGNAL] Server siap menerima request dari ESP32');
+    console.log('[⏳ WAITING FOR ESP SIGNAL] Endpoint: http://<ip>:3000/good?line=<line_number>');
+    console.log('================================================');
 });
 
 // ── REST API SERVER port 4000 ──────────────
