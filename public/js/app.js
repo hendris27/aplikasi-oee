@@ -542,6 +542,7 @@ window.updateQty = async function (key, change) {
                         sendToServer('/api/save-downtime', dtRecord);
                     }
                 }
+                Swal.close();
             }
 
             localStorage.setItem("mode", "run");
@@ -820,7 +821,7 @@ function renderAll() {
         mode: mode,
         started: get("shiftStartedFlag") === "true",
         run_start_ms: parseInt(localStorage.getItem("model_start_ms") || Date.now()),
-        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null, 
+        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null,
 
         oee: oee.toFixed(1),
         avb: avb.toFixed(1),
@@ -1621,7 +1622,7 @@ window.resetData = async function () {
 
 const AUTO_DETECT_HOST = window.location.hostname;
 const SERVER_HOSTS = [
-    `http://${AUTO_DETECT_HOST}:4000` 
+    `http://${AUTO_DETECT_HOST}:4000`
 ];
 
 async function sendToServer(endpoint, payload) {
