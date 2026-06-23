@@ -26,7 +26,6 @@ function writeJSON(filePath, data) {
 
 if (!fs.existsSync(FILE_OEE)) writeJSON(FILE_OEE, []);
 
-// ── SERVER WEBSOCKET (signal dari ESP32) port 3000 ──────────────
 const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -34,7 +33,6 @@ const server = http.createServer((req, res) => {
 
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-    // 📡 LOG SEMUA REQUEST MASUK
     console.log(`[REQUEST] ${req.method} ${req.url} dari IP: ${req.socket.remoteAddress}`);
 
     const url = new URL(req.url, 'http://localhost');
@@ -43,7 +41,6 @@ const server = http.createServer((req, res) => {
         const line = url.searchParams.get('line') || '';
         console.log(`[ESP32] ✅ TERIMA SIGNAL /good dengan line=${line}`);
 
-        // ✅ SIMPAN DATA KE FILE
         if (line) {
             try {
                 const record = {
@@ -63,7 +60,6 @@ const server = http.createServer((req, res) => {
             }
         }
 
-        // ✅ BROADCAST KE BROWSER VIA WEBSOCKET
         const message = line ? JSON.stringify({ type: 'good', line, timestamp: Date.now() }) : 'z';
         let browserCount = 0;
         wss.clients.forEach(client => {
