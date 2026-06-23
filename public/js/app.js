@@ -399,7 +399,6 @@ window.toggleDowntime = async function (isAuto = false) {
         localStorage.setItem("downtimeCategory", category);
         localStorage.setItem("downtime_start_time_ms", Date.now().toString());
         localStorage.setItem("downtime_start_clock_str", timeStartStr);
-        // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat
         localStorage.setItem("lastModeUpdateTime", Date.now().toString());
         localStorage.setItem("mode", "down");
         console.log("Downtime dimulai:", {
@@ -410,14 +409,10 @@ window.toggleDowntime = async function (isAuto = false) {
 
     } else {
         if (!isAuto) {
-            // EXIT DOWNTIME: Rebase run_start_ms agar live monitor hitung dengan base point baru
-            // Rumus: newRunStartMs = Date.now() - currentRuntimeMs
-            // Sehingga: Date.now() - newRunStartMs = currentRuntimeMs (runtime tetap sama)
             const currentRuntimeMs = parseInt(localStorage.getItem("runtimeTotal") || 0);
             const newRunStartMs = Date.now() - currentRuntimeMs;
             localStorage.setItem("model_start_ms", newRunStartMs.toString());
 
-            // PENTING: Reset lastModeUpdateTime agar elapsed di interval berikutnya tidak loncat besar
             localStorage.setItem("lastModeUpdateTime", Date.now().toString());
 
             localStorage.setItem("mode", "run");
@@ -824,8 +819,8 @@ function renderAll() {
         customer: get("cst") || '-',
         mode: mode,
         started: get("shiftStartedFlag") === "true",
-        run_start_ms: parseInt(localStorage.getItem("model_start_ms") || Date.now()),  // Real-time run time
-        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null,  // Real-time downtime
+        run_start_ms: parseInt(localStorage.getItem("model_start_ms") || Date.now()),
+        down_start_ms: mode === "down" ? parseInt(localStorage.getItem("downtime_start_time_ms") || Date.now()) : null, 
 
         oee: oee.toFixed(1),
         avb: avb.toFixed(1),
@@ -1503,7 +1498,7 @@ function getScheduleConfig() {
             5: { start: "07:00", end: "12:00", breaks: [{ s: "10:45", e: "11:00" }] }
         },
         2: {
-            8: { start: "15:00", end: "23:00", breaks: [{ s: "17:00", e: "17:00" }, { s: "18:30", e: "19:15" }] },
+            8: { start: "15:00", end: "23:00", breaks: [{ s: "16:45", e: "17:00" }, { s: "18:30", e: "19:15" }] },
             5: { start: "12:00", end: "17:00", breaks: [{ s: "15:45", e: "16:00" }] }
         },
         3: {
@@ -1538,8 +1533,6 @@ window.resetData = async function () {
     if (!result.isConfirmed) return;
 
     if (isStarted) {
-        // FIX 3: Flush downtime yang sedang aktif ke server sebelum reset.
-        // Tanpa ini, downtime terakhir tidak pernah tersimpan ke server jika tidak ada scan good setelahnya.
         const activeDtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
         if (activeDtStartMs && localStorage.getItem("mode") === "down") {
             const activeDtEndMs = Date.now();
@@ -1626,13 +1619,11 @@ window.resetData = async function () {
     location.reload();
 };
 
-// Server hosts untuk API - Auto-detect berdasarkan hostname
 const AUTO_DETECT_HOST = window.location.hostname;
 const SERVER_HOSTS = [
-    `http://${AUTO_DETECT_HOST}:4000`  // Auto: localhost atau IP server
+    `http://${AUTO_DETECT_HOST}:4000` 
 ];
 
-// Server API untuk menyimpan data OEE dan Downtime
 async function sendToServer(endpoint, payload) {
     for (const serverHost of SERVER_HOSTS) {
         try {
@@ -1659,8 +1650,6 @@ let pendingLivePayload = null;
 let livePushTimer = null;
 
 function queueLivePush(payload) {
-    // Allow both started:true dan started:false untuk dikirim
-    // (server akan handle penghapusan jika started===false)
     if (!payload.line || payload.line === '-') return;
 
     pendingLivePayload = payload;
@@ -1718,7 +1707,6 @@ let ws = null;
 let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000;
-// WS_SERVER akan didefinisikan di live_monitor.blade.php
 let lastGoodSignalTime = 0;
 
 window.wsStatus = 'disconnected';
@@ -1788,7 +1776,6 @@ function connectWebSocket() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Hanya connect WebSocket jika di halaman Live Monitor (WS_SERVER didefinisikan)
     if (typeof WS_SERVER !== 'undefined') {
         connectWebSocket();
     }

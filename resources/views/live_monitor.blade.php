@@ -444,80 +444,81 @@
         }
 
         .lm-topstrip .lm-clock {
-            font-size: clamp(21px, 2.7vh, 33px);
+            font-size: clamp(14px, 1.86vh, 23px);
         }
 
         .lm-topstrip .lm-title {
-            font-size: clamp(20px, 2.55vh, 30px);
+            font-size: clamp(14px, 1.75vh, 21px);
         }
 
         .lm-btn-home {
-            font-size: clamp(18px, 2.25vh, 23px);
+            font-size: clamp(12px, 1.55vh, 15px);
         }
 
         .lm-card-line {
-            font-size: clamp(17px, 2.25vw, 24px);
+            font-size: clamp(12px, 1.55vw, 17px);
         }
 
         .lm-card-badge {
-            font-size: clamp(10px, 1.2vw, 14px);
+            font-size: clamp(7px, 0.83vw, 10px);
         }
 
         .lm-card-sub {
-            font-size: clamp(8px, 1vw, 12px);
+            font-size: clamp(6px, 0.69vw, 9px);
         }
 
         .lm-oee-row .lm-oee-main .lm-oee-label {
-            font-size: clamp(8px, 1.05vw, 12px);
+            font-size: clamp(6px, 0.73vw, 9px);
         }
 
         .lm-oee-row .lm-oee-main .lm-oee-unit {
-            font-size: clamp(8px, 1vw, 10px);
+            font-size: clamp(6px, 0.69vw, 7px);
         }
 
         .lm-oee-row .lm-metric-label {
-            font-size: clamp(6px, 0.75vw, 8px);
+            font-size: clamp(4px, 0.52vw, 6px);
         }
 
         .lm-metric-grid .lm-metric-label {
-            font-size: clamp(6px, 0.8vw, 10px);
+            font-size: clamp(4px, 0.55vw, 7px);
         }
 
         .lm-prod-grid .lm-prod-label {
-            font-size: clamp(6px, 0.8vw, 9px);
+            font-size: clamp(4px, 0.55vw, 7px);
         }
 
         .lm-bottom-row .lm-bottom-label {
-            font-size: clamp(6px, 0.8vw, 9px);
+            font-size: clamp(4px, 0.55vw, 7px);
         }
 
         .lm-oee-row .lm-oee-main .lm-oee-val {
-            font-size: clamp(27px, 4.2vw, 42px);
+            font-size: clamp(19px, 2.89vw, 29px);
         }
 
         .lm-oee-row .lm-metric-val {
-            font-size: clamp(17px, 2.1vw, 23px);
+            font-size: clamp(12px, 1.44vw, 15px);
         }
 
         .lm-metric-grid .lm-metric-val {
-            font-size: clamp(17px, 2.1vw, 23px);
+            font-size: clamp(12px, 1.44vw, 15px);
         }
 
         .lm-prod-grid .lm-prod-val {
-            font-size: clamp(17px, 2.1vw, 23px);
+            font-size: clamp(12px, 1.44vw, 15px);
         }
 
         .lm-bottom-row .lm-bottom-val {
-            font-size: clamp(15px, 1.8vw, 21px);
+            font-size: clamp(10px, 1.24vw, 14px);
         }
 
         .lm-card-empty {
-            font-size: clamp(14px, 1.5vw, 18px);
+            font-size: clamp(10px, 1.03vw, 12px);
         }
 
         .lm-no-data {
-            font-size: clamp(21px, 2.7vw, 30px);
+            font-size: clamp(14px, 1.86vw, 21px);
         }
+
     </style>
 </head>
 
@@ -550,21 +551,20 @@
     </div>
 
     <script>
-        // Auto-detect berdasarkan hostname
         const AUTO_DETECT_HOST = window.location.hostname;
         const API_BASE = `http://${AUTO_DETECT_HOST}:4000`;
         const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
-        const lineStartTimes = {}; // Track mulai produksi setiap line
-        const linesBeingCleared = new Set(); // Track lines dalam proses clear
+        const lineStartTimes = {};
+        const linesBeingCleared = new Set();
 
         let liveLinesMap = {};
         let cardOrder = [];
         let lmSwiper = null;
         let ws = null;
 
-        const lastPayloadRunStartMs = {}; // Track last received run_start_ms untuk detect transition
+        const lastPayloadRunStartMs = {};
 
         function tickClock() {
             const now = new Date();
@@ -683,7 +683,6 @@
             const cardEl = document.getElementById(id);
             if (!cardEl) return;
 
-            // isDown: check mode OR ada down_start_ms (untuk handle delay 2 detik saat klik downtime)
             const isDown = d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0);
             const stale = (Date.now() - (d.lastUpdate || 0)) > STALE_MS;
             const status = isDown ? 'down' : statusFromOee(d.oee);
@@ -700,7 +699,6 @@
             document.getElementById(`${id}-qly`).textContent = parseFloat(d.qly || 0).toFixed(1);
             document.getElementById(`${id}-efc`).textContent = parseFloat(d.efc || 0).toFixed(1);
 
-            // Helper function untuk parse HH:MM:SS ke milliseconds
             const parseTimeToMs = (timeStr) => {
                 const parts = (timeStr || '0:0:0').split(':');
                 const h = parseInt(parts[0]) || 0;
@@ -709,53 +707,39 @@
                 return (h * 3600 + m * 60 + s) * 1000;
             };
 
-            // Hitung AVB, PFM, QLY, OEE real-time untuk sinkronisasi
             let runtimeMs = 0;
 
-            // SAFEGUARD: Dual-check downtime status (mode + down_start_ms) untuk handle delay
-            // Kalau downtime, JANGAN hitung runtime real-time, gunakan frozen value
             if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
-                // Downtime mode: runtime FROZEN
-                // Reset lineStartTimes untuk line ini agar tidak ada mismatch saat exit downtime
                 delete lineStartTimes[line];
                 delete lastPayloadRunStartMs[line];
                 runtimeMs = parseTimeToMs(d.run_time);
             } else if (d.run_start_ms) {
-                // Normal run mode: runtime REAL-TIME dari run_start_ms
                 const payloadRunTimeMs = parseTimeToMs(d.run_time);
                 const isFirstPayload = !lastPayloadRunStartMs.hasOwnProperty(line);
                 const isTransition = isFirstPayload || (lastPayloadRunStartMs[line] !== d.run_start_ms);
 
                 if (isTransition) {
-                    // First payload atau base point changed (exit downtime): re-calibrate untuk eliminate delay offset
-                    // newBase = Date.now() - payloadRunTime memastikan even dengan delay, calculation tetap akurat
                     lineStartTimes[line] = Date.now() - payloadRunTimeMs;
                     lastPayloadRunStartMs[line] = d.run_start_ms;
                     runtimeMs = payloadRunTimeMs;
                 } else {
-                    // run_start_ms stable, calculate real-time
                     runtimeMs = Date.now() - lineStartTimes[line];
                 }
             }
 
-            // Parse downtime dari format HH:MM:SS ke milliseconds
             let downtimeMs = parseTimeToMs(d.down_time);
-            // Jika sedang downtime, tambahkan downtime current ke downtime sebelumnya
             if (d.down_start_ms && d.down_start_ms > 0) {
-                // Downtime sedang berjalan: tambahkan durasi dari down_start_ms sampai sekarang
                 const currentDowntimeDurationMs = Date.now() - d.down_start_ms;
                 downtimeMs = downtimeMs + currentDowntimeDurationMs;
             }
 
             const totalTimeMs = runtimeMs + downtimeMs;
 
-            // Kalkulasi metrik real-time
             const realAvb = totalTimeMs > 0 ? (runtimeMs / totalTimeMs) * 100 : 0;
             const realQly = (d.tqty > 0) ? (d.good / d.tqty) * 100 : 0;
             const realPfm = d.cyc && totalTimeMs > 0 ? ((d.tqty * d.cyc) / (totalTimeMs / 1000)) * 100 : 0;
             const realOee = Math.min((realAvb * realPfm * realQly) / 10000, 100);
 
-            // Update OEE display dengan nilai real-time
             const oeeEl = document.getElementById(`${id}-oee`);
             if (oeeEl) oeeEl.textContent = realOee.toFixed(1);
 
@@ -791,7 +775,6 @@
                 }
             };
 
-            // Update metrics dengan nilai real-time
             document.getElementById(`${id}-avb`).textContent = realAvb.toFixed(1);
             applyMetricColor(`${id}-avb`, realAvb);
             applyMetricColor(`${id}-pfm`, realPfm);
@@ -805,19 +788,14 @@
             document.getElementById(`${id}-good2`).textContent = parseInt(d.good || 0);
             document.getElementById(`${id}-ng`).textContent = parseInt(d.ng || 0);
 
-            // Hitung run time display dengan sync sama calculation logic
-            // SAFEGUARD: Gunakan dual-check mode + down_start_ms untuk handle delay
             if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
-                // Downtime mode: runtime FROZEN
                 document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
             } else if (d.run_start_ms) {
-                // Run mode: use same calculation logic untuk consistency
                 const payloadRunTimeMs = parseTimeToMs(d.run_time);
                 const isFirstPayload = !lastPayloadRunStartMs.hasOwnProperty(line);
                 const isTransition = isFirstPayload || (lastPayloadRunStartMs[line] !== d.run_start_ms);
 
                 if (isTransition) {
-                    // Transition atau first set: use payload (sudah re-calibrated untuk delay)
                     const displayRunTimeMs = payloadRunTimeMs;
                     const hours = Math.floor(displayRunTimeMs / 3600000);
                     const mins = Math.floor((displayRunTimeMs % 3600000) / 60000);
@@ -826,7 +804,6 @@
                         `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
                     document.getElementById(`${id}-run`).textContent = runTimeStr;
                 } else {
-                    // Stable: calculate real-time (same as runtimeMs calculation)
                     const displayRunTimeMs = Date.now() - lineStartTimes[line];
                     const hours = Math.floor(displayRunTimeMs / 3600000);
                     const mins = Math.floor((displayRunTimeMs % 3600000) / 60000);
@@ -839,7 +816,6 @@
                 document.getElementById(`${id}-run`).textContent = d.run_time || '00:00:00';
             }
 
-            // Hitung downtime display real-time jika sedang downtime
             if (d.mode === 'down' || (d.down_start_ms && d.down_start_ms > 0)) {
                 const currentDowntimeDurationMs = Date.now() - d.down_start_ms;
                 const baseDowntimeMs = parseTimeToMs(d.down_time);
@@ -926,11 +902,8 @@
                 const arr = await res.json();
                 liveLinesMap = {};
                 arr.forEach(d => {
-                    // Skip lines yang belum started (tidak ada data untuk running)
                     if (!d.started) return;
 
-                    // Skip lines yang sedang di-clear (jangan re-add yang sudah dihapus)
-                    // Trim line untuk prevent duplikasi karena whitespace
                     const cleanLine = String(d.line || '').trim();
                     if (cleanLine && !linesBeingCleared.has(cleanLine)) {
                         liveLinesMap[cleanLine] = {
@@ -961,24 +934,18 @@
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'live_update') {
-                            // Jangan load jika line sedang di-clear
                             if (msg.line && !linesBeingCleared.has(String(msg.line).trim())) {
                                 loadLiveStatus();
                             }
                         } else if (msg.type === 'live_clear') {
-                            // Instant removal saat line di-clear (STOP di homepage)
                             if (msg.line) {
                                 const cleanLine = String(msg.line).trim();
                                 linesBeingCleared.add(cleanLine);
                                 delete liveLinesMap[cleanLine];
-                                render(); // Immediately update display
+                                render();
 
-                                // Konfirm dengan server setelah 500ms
-                                // Untuk memastikan polling tidak membawa data lama kembali
                                 setTimeout(() => {
                                     loadLiveStatus();
-                                    // Hapus dari tracking setelah 5 MENIT (300000ms)
-                                    // untuk prevent re-add dari polling
                                     setTimeout(() => {
                                         linesBeingCleared.delete(cleanLine);
                                         console.log(
