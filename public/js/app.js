@@ -542,7 +542,6 @@ window.updateQty = async function (key, change) {
                         sendToServer('/api/save-downtime', dtRecord);
                     }
                 }
-                Swal.close();
             }
 
             localStorage.setItem("mode", "run");
@@ -550,6 +549,10 @@ window.updateQty = async function (key, change) {
             localStorage.removeItem("downtime_start_time_ms");
             localStorage.removeItem("downtime_start_clock_str");
             localStorage.removeItem("autoPopupShowed");
+            if (Swal.isVisible()) {
+                Swal.hideLoading();
+                Swal.close();
+            }
         } else {
             g = Math.max(0, g - qtyPallet);
         }
