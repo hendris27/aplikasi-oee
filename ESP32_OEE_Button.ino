@@ -23,6 +23,8 @@ void setup() {
 
     Serial.println("\n\n=== OEE ESP32 BUTTON ===");
     Serial.println("Starting WiFi...");
+
+    delay(500); // Stabilitas WiFi module
     WiFi.begin(ssid, password);
 
     int attempts = 0;
@@ -50,6 +52,7 @@ void loop() {
 
     if (lastState == HIGH && currentState == LOW && (currentTime - lastPressTime) > DEBOUNCE_DELAY) {
         Serial.println("[BUTTON] Pressed!");
+        Serial.flush(); // Pastikan data terkirim
 
         if (WiFi.status() == WL_CONNECTED) {
             sendRequest();
@@ -62,6 +65,7 @@ void loop() {
     }
 
     lastState = currentState;
+    delay(50); // Cegah overload loop
 }
 
 void sendRequest() {
@@ -69,6 +73,7 @@ void sendRequest() {
     http.setTimeout(5000);
 
     Serial.println("[HTTP] Connecting to: " + String(serverURL));
+    Serial.flush();
     http.begin(serverURL);
 
     Serial.println("[HTTP] Sending GET request...");
@@ -91,4 +96,5 @@ void sendRequest() {
 
     http.end();
     Serial.println("[HTTP] Request completed");
+    Serial.flush();
 }
