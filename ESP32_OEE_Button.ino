@@ -67,23 +67,28 @@ void loop() {
 void sendRequest() {
     HTTPClient http;
     http.setTimeout(5000);
+    
+    Serial.println("[HTTP] Connecting to: " + String(serverURL));
     http.begin(serverURL);
     
-    Serial.println("[HTTP] Sending GET...");
+    Serial.println("[HTTP] Sending GET request...");
     int httpCode = http.GET();
     
+    Serial.print("[HTTP] Response code: ");
+    Serial.println(httpCode);
+    
     if (httpCode > 0) {
-        Serial.print("[HTTP] Response code: ");
-        Serial.println(httpCode);
-        
         if (httpCode == HTTP_CODE_OK) {
             String response = http.getString();
-            Serial.println("[HTTP] Response: " + response);
+            Serial.println("[HTTP] Success! Response: " + response);
+        } else {
+            Serial.println("[HTTP] Got response code, but not 200");
         }
     } else {
-        Serial.print("[HTTP] Error: ");
+        Serial.print("[HTTP] Connection failed! Error: ");
         Serial.println(http.errorToString(httpCode));
     }
     
     http.end();
+    Serial.println("[HTTP] Request completed");
 }
