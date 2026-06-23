@@ -15,12 +15,12 @@ const unsigned long DEBOUNCE_DELAY = 500;
 void setup() {
     Serial.begin(115200);
     delay(100);
-    
+
     pinMode(INPUT_PIN, INPUT_PULLUP);
     pinMode(LED_WIFI, OUTPUT);
-    
+
     digitalWrite(LED_WIFI, LOW);
-    
+
     Serial.println("\n\n=== OEE ESP32 BUTTON ===");
     Serial.println("Starting WiFi...");
     WiFi.begin(ssid, password);
@@ -50,13 +50,13 @@ void loop() {
 
     if (lastState == HIGH && currentState == LOW && (currentTime - lastPressTime) > DEBOUNCE_DELAY) {
         Serial.println("[BUTTON] Pressed!");
-        
+
         if (WiFi.status() == WL_CONNECTED) {
             sendRequest();
         } else {
             Serial.println("[ERROR] WiFi not connected!");
         }
-        
+
         lastPressTime = currentTime;
         delay(100);
     }
@@ -67,16 +67,16 @@ void loop() {
 void sendRequest() {
     HTTPClient http;
     http.setTimeout(5000);
-    
+
     Serial.println("[HTTP] Connecting to: " + String(serverURL));
     http.begin(serverURL);
-    
+
     Serial.println("[HTTP] Sending GET request...");
     int httpCode = http.GET();
-    
+
     Serial.print("[HTTP] Response code: ");
     Serial.println(httpCode);
-    
+
     if (httpCode > 0) {
         if (httpCode == HTTP_CODE_OK) {
             String response = http.getString();
@@ -88,7 +88,7 @@ void sendRequest() {
         Serial.print("[HTTP] Connection failed! Error: ");
         Serial.println(http.errorToString(httpCode));
     }
-    
+
     http.end();
     Serial.println("[HTTP] Request completed");
 }
