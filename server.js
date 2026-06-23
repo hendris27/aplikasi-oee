@@ -44,13 +44,36 @@ const wsServer = http.createServer((req, res) => {
 
     if (url.pathname === '/good' && req.method === 'GET') {
         const line = url.searchParams.get('line') || '';
-        const message = line ? JSON.stringify({ type: 'good', line }) : 'z';
-        console.log(`[WS] GOOD dari ESP32${line ? ' | LINE ' + line : ''}`);
+        console.log(`[GOOD] Signal dari ESP32${line ? ' | LINE ' + line : ''}`);
+
+        // ✅ SIMPAN DATA KE FILE
+        if (line) {
+            try {
+                const record = {
+                    id: Date.now(),
+                    machine: 'Line ' + line,
+                    model: 'ESP32-Button-' + line,
+                    good_count: 1,
+                    timestamp: new Date().toISOString()
+                };
+
+                let data = readJSON(FILE_OEE);
+                data.push(record);
+                writeJSON(FILE_OEE, data);
+                console.log('[GOOD] ✅ Counter nambah! Total records:', data.length);
+            } catch (e) {
+                console.error('[GOOD] Error save:', e.message);
+            }
+        }
+
+        // ✅ BROADCAST KE BROWSER
+        const message = line ? JSON.stringify({ type: 'good', line, timestamp: Date.now() }) : 'z';
         wss.clients.forEach(client => {
             if (client.readyState === 1) client.send(message);
         });
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('OK');
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'ok', saved: true }));
         return;
     }
 
@@ -99,6 +122,7 @@ const apiServer = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const payload = JSON.parse(body);
+                console.log('[API/live-update] Diterima dari:', req.socket.remoteAddress, '| Payload:', JSON.stringify(payload).substring(0, 150));
                 let line = String(payload.line || '').trim();
                 if (!line) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -108,6 +132,7 @@ const apiServer = http.createServer((req, res) => {
 
                 // FILTER: Jika started === false, DELETE dari liveStatus (jangan simpan)
                 if (payload.started === false) {
+                    console.log('[API/live-update] ⚠️  started=false, MENGHAPUS line:', line);
                     if (liveStatus[line]) delete liveStatus[line];
                     res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ status: 'ok', action: 'deleted' }));
@@ -117,6 +142,7 @@ const apiServer = http.createServer((req, res) => {
                 payload.line = line;  // Normalize line
                 payload.lastUpdate = Date.now();
                 liveStatus[line] = payload;
+                console.log('[API/live-update] ✅ Disimpan di liveStatus[' + line + ']');
 
                 const notif = JSON.stringify({ type: 'live_update', line });
                 wss.clients.forEach(client => {
@@ -134,8 +160,10 @@ const apiServer = http.createServer((req, res) => {
     }
 
     if (pathname === '/api/live-status' && req.method === 'GET') {
+        const data = Object.values(liveStatus);
+        console.log('[API/live-status] GET request - Total lines in memory:', data.length);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(Object.values(liveStatus)));
+        res.end(JSON.stringify(data));
         return;
     }
 
