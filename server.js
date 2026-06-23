@@ -15,7 +15,7 @@ function readJSON(filePath) {
         const raw = fs.readFileSync(filePath, 'utf8');
         return JSON.parse(raw) || [];
     } catch (e) {
-        console.error('[FILE] Gagal baca:', filePath, e.message);
+        console.error('[FILE] Error read:', filePath, e.message);
         return [];
     }
 }
@@ -24,7 +24,7 @@ function writeJSON(filePath, data) {
     try {
         fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
     } catch (e) {
-        console.error('[FILE] Gagal tulis:', filePath, e.message);
+        console.error('[FILE] Error write:', filePath, e.message);
     }
 }
 
@@ -33,6 +33,7 @@ if (!fs.existsSync(FILE_DOWNTIME)) writeJSON(FILE_DOWNTIME, []);
 
 const liveStatus = {};
 
+// ── SERVER WEBSOCKET (signal dari ESP32) port 3000 ──────────────
 const wsServer = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -44,7 +45,7 @@ const wsServer = http.createServer((req, res) => {
 
     if (url.pathname === '/good' && req.method === 'GET') {
         const line = url.searchParams.get('line') || '';
-        console.log(`[GOOD] Signal dari ESP32${line ? ' | LINE ' + line : ''}`);
+        console.log(`[⏳ WAITING ESP] Received: /good${line ? ` | LINE ${line}` : ''}`);
 
         // ✅ SIMPAN DATA KE FILE
         if (line) {
@@ -60,38 +61,40 @@ const wsServer = http.createServer((req, res) => {
                 let data = readJSON(FILE_OEE);
                 data.push(record);
                 writeJSON(FILE_OEE, data);
-                console.log('[GOOD] ✅ Counter nambah! Total records:', data.length);
+                console.log(`[✅ SAVED] Counter nambah! Total records: ${data.length}`);
             } catch (e) {
-                console.error('[GOOD] Error save:', e.message);
+                console.error('[ERROR] Save failed:', e.message);
             }
         }
 
         // ✅ BROADCAST KE BROWSER
         const message = line ? JSON.stringify({ type: 'good', line, timestamp: Date.now() }) : 'z';
+        console.log(`[📤 BROADCAST] Sending to ${wss.clients.size} connected browsers`);
         wss.clients.forEach(client => {
             if (client.readyState === 1) client.send(message);
         });
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'ok', saved: true }));
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end("OK");
         return;
     }
 
-    res.writeHead(404); res.end();
+    res.writeHead(404);
+    res.end();
 });
 
 const wss = new WebSocketServer({ server: wsServer });
 
-wss.on('connection', (ws, req) => {
-    const ip = req.socket.remoteAddress;
-    console.log('[WS] Browser terhubung dari:', ip);
-    ws.on('close', () => console.log('[WS] Browser terputus:', ip));
+wss.on('connection', (ws) => {
+    console.log('[✅ CONNECTED] Browser terhubung');
+    ws.on('close', () => console.log('[❌ DISCONNECTED] Browser terputus'));
 });
 
 wsServer.listen(WS_PORT, '0.0.0.0', () => {
-    console.log('[WS]  WebSocket + ESP32 berjalan di port', WS_PORT);
+    console.log('[WS] WebSocket + ESP32 berjalan di port', WS_PORT);
 });
 
+// ── REST API SERVER port 4000 ──────────────
 const apiServer = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -130,7 +133,6 @@ const apiServer = http.createServer((req, res) => {
                     return;
                 }
 
-                // FILTER: Jika started === false, DELETE dari liveStatus (jangan simpan)
                 if (payload.started === false) {
                     console.log('[API/live-update] ⚠️  started=false, MENGHAPUS line:', line);
                     if (liveStatus[line]) delete liveStatus[line];
@@ -139,7 +141,7 @@ const apiServer = http.createServer((req, res) => {
                     return;
                 }
 
-                payload.line = line;  // Normalize line
+                payload.line = line;
                 payload.lastUpdate = Date.now();
                 liveStatus[line] = payload;
                 console.log('[API/live-update] ✅ Disimpan di liveStatus[' + line + ']');
@@ -371,5 +373,4 @@ console.log('   OEE SERVER');
 console.log('   WebSocket (ESP32) : port', WS_PORT);
 console.log('   REST API (Data)   : port', API_PORT);
 console.log('   Data disimpan di  : data_oee.json & data_downtime.json');
-console.log('   Live status       : in-memory (realtime, tidak disimpan ke file)');
 console.log('===========================================');

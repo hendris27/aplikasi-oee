@@ -7,7 +7,6 @@ const char *serverURL = "http://192.168.62.38:3000/good?line=64";
 
 #define INPUT_PIN 15
 #define LED_WIFI 2
-#define LED_BUTTON 4
 
 bool lastState = HIGH;
 unsigned long lastPressTime = 0;
@@ -19,10 +18,8 @@ void setup() {
     
     pinMode(INPUT_PIN, INPUT_PULLUP);
     pinMode(LED_WIFI, OUTPUT);
-    pinMode(LED_BUTTON, OUTPUT);
     
     digitalWrite(LED_WIFI, LOW);
-    digitalWrite(LED_BUTTON, LOW);
     
     Serial.println("\n\n=== OEE ESP32 BUTTON ===");
     Serial.println("Starting WiFi...");
@@ -53,7 +50,6 @@ void loop() {
 
     if (lastState == HIGH && currentState == LOW && (currentTime - lastPressTime) > DEBOUNCE_DELAY) {
         Serial.println("[BUTTON] Pressed!");
-        digitalWrite(LED_BUTTON, HIGH);
         
         if (WiFi.status() == WL_CONNECTED) {
             sendRequest();
@@ -61,7 +57,6 @@ void loop() {
             Serial.println("[ERROR] WiFi not connected!");
         }
         
-        digitalWrite(LED_BUTTON, LOW);
         lastPressTime = currentTime;
         delay(100);
     }
