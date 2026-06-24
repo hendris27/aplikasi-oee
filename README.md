@@ -1,132 +1,154 @@
 <div align="center">
 
 # 🏭 OEE Monitoring System
-### BE LINE — Production 2, Engineering 2
 
-**Sistem monitoring OEE berbasis web real-time untuk production line.**
-Pencatatan produksi otomatis melalui tombol fisik ESP32 atau keyboard.
+### BE Line — Production 2, Engineering 2
+
+**A real-time web-based OEE monitoring system designed for production line performance tracking.**
+
+Production data is automatically recorded through either an ESP32 physical button or keyboard input.
 
 </div>
-## 🖥️ Halaman
-
-### `/` — Homepage (Halaman Produksi)
-Halaman utama yang digunakan operator selama produksi berlangsung.
-Terdiri dari 3 slide yang berganti otomatis:
-
-| Slide | Isi |
-|---|---|
-| **Page 1** | Nilai OEE, Availability, Performance, Quality, Efficiency |
-| **Page 2** | Target, Ideal Qty, Total Qty, Good, NG |
-| **Page 3** | Achievement, Cycle Time, Real Cycle, Runtime, Downtime |
 
 ---
 
-### `/live` — Live Monitor
-Menampilkan status **semua line produksi** secara real-time dalam satu layar.
-Cocok ditampilkan di monitor pantau ruang produksi.
+# 🖥️ Pages
+
+## `/` — Production Homepage
+
+The main operational page used by operators during production.
+
+The interface consists of three slides that rotate automatically:
+
+| Slide      | Description                                                            |
+| ---------- | ---------------------------------------------------------------------- |
+| **Page 1** | OEE, Availability, Performance, Quality, and Efficiency metrics        |
+| **Page 2** | Target, Ideal Quantity, Total Quantity, Good Quantity, and NG Quantity |
+| **Page 3** | Achievement, Cycle Time, Real Cycle Time, Runtime, and Downtime        |
 
 ---
 
-### `/all` — Report
-Menampilkan **histori data OEE dan downtime** dari seluruh shift.
-Data dapat diedit, dihapus, dan di-export ke file **Excel**.
+## `/live` — Live Monitor
+
+Displays the real-time production status of all production lines on a single screen.
+
+Ideal for large monitoring displays in production areas.
 
 ---
 
-## ⚙️ Setting Sebelum Mulai Produksi
+## `/all` — Report
 
-Klik tombol **Setting** di pojok kanan atas homepage, lalu isi form berikut:
+Provides historical OEE and downtime records for all shifts.
 
-| Field | Keterangan |
-|---|---|
-| **Line** | Nama line produksi *(contoh: BE1, BE2)* |
-| **Machine** | Nama mesin yang digunakan |
-| **Model** | Tipe / part number produk yang sedang diproduksi |
-| **Target** | Jumlah pcs yang harus dicapai dalam shift ini |
-| **UPH** | Unit Per Hour — standar kecepatan mesin |
-| **Customer** | Nama customer produk ini |
-| **Qty/Pallet** | Jumlah pcs yang dihitung setiap 1 kali sinyal good |
-| **Shift** | Pilih Shift 1 / 2 / 3, atau **Auto** untuk deteksi otomatis |
-| **Group** | Group A / B / C |
-| **Planned Time** | Durasi shift — **7 jam** atau **5 jam** |
+Users can:
 
-Setelah diisi, klik **Start Production** — sistem mulai berjalan.
+* View production history
+* Edit records
+* Delete records
+* Export data to Microsoft Excel format
 
 ---
 
-## ➕ Cara Menambah Qty Good
+# ⚙️ Production Setup
 
-Ada dua cara yang bisa digunakan, keduanya menghasilkan hasil yang sama:
+Before starting production, click the **Setting** button located in the upper-right corner of the homepage and complete the following configuration:
 
-| Cara | Keterangan |
-|---|---|
-| **Tombol ESP32** | Tekan tombol fisik yang terhubung ke mesin |
-| **Keyboard `Z`** | Tekan huruf Z di keyboard komputer |
+| Field            | Description                                       |
+| ---------------- | ------------------------------------------------- |
+| **Line**         | Production line name *(e.g., BE1, BE2)*           |
+| **Machine**      | Machine name                                      |
+| **Model**        | Product model or part number                      |
+| **Target**       | Required production quantity for the shift        |
+| **UPH**          | Units Per Hour (machine standard speed)           |
+| **Customer**     | Customer name                                     |
+| **Qty/Pallet**   | Quantity counted for each Good signal             |
+| **Shift**        | Shift 1 / Shift 2 / Shift 3 or **Auto** detection |
+| **Group**        | Group A / B / C                                   |
+| **Planned Time** | Shift duration: **7 Hours** or **5 Hours**        |
 
-Setiap 1 kali sinyal = qty bertambah sebesar nilai **Qty/Pallet** yang diset di konfigurasi.
-
----
-
-## 🔴 Downtime
-
-Sistem akan **otomatis mendeteksi downtime** apabila tidak ada sinyal good dalam waktu melebihi standar cycle time.
-
-Saat downtime terdeteksi:
-1. Tombol **Downtime** di header berubah merah
-2. Popup muncul untuk memilih **alasan downtime**
-3. Timer downtime mulai berjalan
-
-Untuk **menutup downtime**, cukup tekan tombol ESP32 atau keyboard `Z` — sistem akan otomatis:
-- Menutup popup
-- Mencatat log downtime beserta durasinya
-- Melanjutkan timer produksi
+After completing the configuration, click **Start Production** to begin operation.
 
 ---
 
-## 📊 Rumus OEE
+# ➕ Adding Good Quantity
 
-OEE terdiri dari 3 komponen utama yang dikalikan:
+There are two available methods to register Good production quantity:
+
+| Method           | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| **ESP32 Button** | Press the physical button connected to the machine |
+| **Keyboard `Z`** | Press the Z key on the computer keyboard           |
+
+Each signal increases the quantity according to the configured **Qty/Pallet** value.
 
 ---
 
-Kalau maksudnya ingin tampilannya konsisten seperti AVB (ada judul, penjelasan, rumus matematika, dan format code block), bisa dibuat seperti ini:
+# 🔴 Downtime Management
+
+The system automatically detects downtime whenever no Good signal is received beyond the standard cycle time.
+
+When downtime is detected:
+
+1. The **Downtime** button in the header turns red
+2. A popup window appears requesting a downtime reason
+3. The downtime timer starts automatically
+
+To close downtime, simply press either:
+
+* The ESP32 button
+* Keyboard `Z`
+
+The system will automatically:
+
+* Close the popup window
+* Record the downtime event and duration
+* Resume production tracking
 
 ---
 
-### 📈 Availability — AVB
-> Seberapa lama mesin benar-benar berjalan dari total waktu yang tersedia
+# 📊 OEE Calculation Formula
 
-$$AVB = \frac{Runtime}{Runtime + Downtime} \times 100$$
+OEE is calculated based on three primary performance indicators.
 
-```
+---
+
+## 📈 Availability (AVB)
+
+Measures how long the machine is actually running compared to the total available time.
+
+$$
+AVB = \frac{Runtime}{Runtime + Downtime} \times 100
+$$
+
+```text
 AVB (%) = Runtime / (Runtime + Downtime) × 100
 ```
 
 ---
 
-### ⚡ Performance — PFM
+## ⚡ Performance (PFM)
 
-> Seberapa cepat mesin berproduksi dibandingkan standar yang ditetapkan
+Measures production speed compared to the machine's standard performance.
 
 $$
 CycleBase = \frac{3600}{UPH}
 $$
 
 $$
-PFM = \frac{TotalQty \times CycleBase}{TotalWaktu} \times 100
+PFM = \frac{TotalQty \times CycleBase}{TotalTime} \times 100
 $$
 
 ```text
-Cycle Base (detik/unit) = 3600 / UPH
+Cycle Base (sec/unit) = 3600 / UPH
 
-PFM (%) = (Total Qty × Cycle Base) / Total Waktu (detik) × 100
+PFM (%) = (Total Qty × Cycle Base) / Total Time (sec) × 100
 ```
 
 ---
 
-### ✅ Quality — QLY
+## ✅ Quality (QLY)
 
-> Rasio produk good dari seluruh produk yang diproduksi
+Measures the ratio of good products to total production output.
 
 $$
 QLY = \frac{Good}{Good + NG} \times 100
@@ -138,32 +160,32 @@ QLY (%) = Good / (Good + NG) × 100
 
 ---
 
-### 🏆 Overall Equipment Effectiveness — OEE
+## 🏆 Overall Equipment Effectiveness (OEE)
 
-> Nilai keseluruhan efektivitas mesin
+Represents the overall effectiveness of the production process.
 
 $$
 OEE = \frac{AVB \times PFM \times QLY}{10000}
 $$
 
 ```text
-OEE (%) = (AVB × PFM × QLY) / 10.000
+OEE (%) = (AVB × PFM × QLY) / 10,000
 ```
 
-> Nilai maksimal OEE adalah **100%**
+**Maximum OEE Value: 100%**
 
 ---
 
-### 💡 Efficiency — EFC
+## 💡 Efficiency (EFC)
 
-> Seberapa efisien produksi dibandingkan jumlah ideal yang seharusnya tercapai
+Measures actual production efficiency compared to the ideal production quantity.
 
 $$
 CycleDisplay = \left(\frac{3600}{UPH}\right) \times QtyPerPallet
 $$
 
 $$
-IdealQty = \left\lfloor \frac{TotalWaktu}{CycleDisplay} \right\rfloor \times QtyPerPallet
+IdealQty = \left\lfloor \frac{TotalTime}{CycleDisplay} \right\rfloor \times QtyPerPallet
 $$
 
 $$
@@ -173,7 +195,7 @@ $$
 ```text
 Cycle Display = (3600 / UPH) × Qty/Pallet
 
-Ideal Qty = floor(Total Waktu (detik) / Cycle Display)
+Ideal Qty = floor(Total Time (sec) / Cycle Display)
             × Qty/Pallet
 
 EFC (%) = Good / Ideal Qty × 100
@@ -181,9 +203,9 @@ EFC (%) = Good / Ideal Qty × 100
 
 ---
 
-### 🎯 Achievement — ACV
+## 🎯 Achievement (ACV)
 
-> Persentase pencapaian produksi terhadap target shift
+Measures production achievement against the shift target.
 
 $$
 ACV = \frac{TotalQty}{Target} \times 100
@@ -195,23 +217,23 @@ ACV (%) = Total Qty / Target × 100
 
 ---
 
-### 🧮 Total Waktu Produksi
+## 🧮 Total Production Time
 
-> Total waktu yang digunakan dalam perhitungan performa dan efisiensi
+Total time used for performance and efficiency calculations.
 
 $$
-TotalWaktu = Runtime + Downtime
+TotalTime = Runtime + Downtime
 $$
 
 ```text
-Total Waktu (detik) = Runtime + Downtime
+Total Time (sec) = Runtime + Downtime
 ```
 
 ---
 
-### 📦 Total Quantity
+## 📦 Total Quantity
 
-> Total produk yang dihasilkan selama produksi
+Total production output generated during the shift.
 
 $$
 TotalQty = Good + NG
@@ -223,86 +245,62 @@ Total Qty = Good + NG
 
 ---
 
-### ⏱ Cycle Time
+## ⏱ Cycle Time
 
-> Waktu standar yang dibutuhkan untuk menghasilkan 1 unit produk
+Standard time required to produce one unit.
 
 $$
 CycleTime = \frac{3600}{UPH}
 $$
 
 ```text
-Cycle Time (detik/unit) = 3600 / UPH
+Cycle Time (sec/unit) = 3600 / UPH
 ```
-
-```
-
-Hasilnya nanti semua parameter (AVB, PFM, QLY, OEE, EFC, ACV) punya format yang seragam dan lebih enak dibaca di dashboard, PDF, maupun halaman Help/Info Formula.
-```
-
-
-## 🎨 Indikator Warna
-
-Setiap nilai OEE dan komponennya akan berubah warna otomatis:
-
-| Warna | Kondisi | Arti |
-|:---:|:---:|---|
-| 🟢 **Hijau** | ≥ 100% | Tercapai / On target |
-| 🔴 **Merah** | < 90% | Di bawah standar |
-| ⬜ **Transparan** | 90% – 99% | Mendekati target |
 
 ---
 
-## ⌨️ Keyboard Shortcut
+# 🎨 Color Indicators
 
-Untuk memudahkan operator tanpa menggunakan mouse:
+OEE values and related metrics automatically change color according to performance status.
 
-| Tombol | Fungsi |
-|:---:|---|
-| `Z` | Tambah qty good |
-| `Space` | Aktifkan / nonaktifkan downtime |
-| `D` | Buka Setting |
-| `R` | Stop & reset shift |
-| `E` | Export laporan ke Excel |
-| `→` / `←` | Pindah slide |
-| `Escape` | Tutup popup |
+|     Color     | Condition | Meaning         |
+| :-----------: | :-------: | --------------- |
+|    🟢 Green   |   ≥ 100%  | Target Achieved |
+|     🔴 Red    |   < 90%   | Below Standard  |
+| ⬜ Transparent | 90% – 99% | Near Target     |
 
 ---
 
-## 🕐 Jam Kerja & Break
+# ⌨️ Keyboard Shortcuts
 
-Timer hanya berjalan pada jam kerja yang telah ditentukan. Break otomatis menghentikan timer.
+The following shortcuts are available to improve operator efficiency:
 
-**Planned 7 Jam**
-
-| Shift | Jam Kerja | Jam Break |
-|:---:|---|---|
-| Shift 1 | 07:00 – 15:00 | 11:15–12:00 dan 13:15–13:30 |
-| Shift 2 | 15:00 – 23:00 | 16:45–17:00 dan 18:30–19:15 |
-| Shift 3 | 23:00 – 07:00 | 02:40–03:20 dan 05:10–05:30 |
-
-**Planned 5 Jam**
-
-| Shift | Jam Kerja | Jam Break |
-|:---:|---|---|
-| Shift 1 | 07:00 – 12:00 | 10:45–11:00 |
-| Shift 2 | 12:00 – 17:00 | 15:45–16:00 |
-| Shift 3 | 17:00 – 22:00 | 18:45–19:00 |
+|    Key    | Function                     |
+| :-------: | ---------------------------- |
+|    `Z`    | Add Good Quantity            |
+|  `Space`  | Enable / Disable Downtime    |
+|    `D`    | Open Settings                |
+|    `R`    | Stop and Reset Current Shift |
+|    `E`    | Export Report to Excel       |
+| `→` / `←` | Switch Slides                |
+|   `Esc`   | Close Popup Window           |
 
 ---
 
-## ⏹️ Stop Shift
+# ⏹️ End of Shift
 
-Setelah produksi selesai, klik tombol **Stop** di header homepage.
-Sistem akan:
-1. Menyimpan data OEE shift ini ke server
-2. Menghapus status line dari Live Monitor
-3. Mereset semua data untuk shift berikutnya
+When production is completed, click the **Stop** button in the homepage header.
+
+The system will automatically:
+
+1. Save the current shift OEE data to the server
+2. Remove the line status from the Live Monitor page
+3. Reset all production data for the next shift
 
 ---
 
 <div align="center">
 
-Dibuat untuk **SIIX Production 2 — Engineering 2**
+Developed for **SIIX Production 2 — Engineering 2**
 
 </div>
