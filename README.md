@@ -89,22 +89,36 @@ OEE terdiri dari 3 komponen utama yang dikalikan:
 
 ---
 
+Kalau maksudnya ingin tampilannya konsisten seperti AVB (ada judul, penjelasan, rumus matematika, dan format code block), bisa dibuat seperti ini:
+
+````md
 ### 📈 Availability — AVB
 > Seberapa lama mesin benar-benar berjalan dari total waktu yang tersedia
 
-$$AVB = \frac{Runtime}{Runtime + Downtime} \times 100$$
+$$
+AVB = \frac{Runtime}{Runtime + Downtime} \times 100
+$$
 
-```
+```text
 AVB (%) = Runtime / (Runtime + Downtime) × 100
-```
+````
 
 ---
 
 ### ⚡ Performance — PFM
+
 > Seberapa cepat mesin berproduksi dibandingkan standar yang ditetapkan
 
-```
-Cycle Base  = 3600 / UPH   (detik per unit)
+$$
+CycleBase = \frac{3600}{UPH}
+$$
+
+$$
+PFM = \frac{TotalQty \times CycleBase}{TotalWaktu} \times 100
+$$
+
+```text
+Cycle Base (detik/unit) = 3600 / UPH
 
 PFM (%) = (Total Qty × Cycle Base) / Total Waktu (detik) × 100
 ```
@@ -112,18 +126,28 @@ PFM (%) = (Total Qty × Cycle Base) / Total Waktu (detik) × 100
 ---
 
 ### ✅ Quality — QLY
+
 > Rasio produk good dari seluruh produk yang diproduksi
 
-```
+$$
+QLY = \frac{Good}{Good + NG} \times 100
+$$
+
+```text
 QLY (%) = Good / (Good + NG) × 100
 ```
 
 ---
 
-### 🏆 OEE
-> Nilai keseluruhan efektivitas mesin — hasil perkalian ketiga komponen
+### 🏆 Overall Equipment Effectiveness — OEE
 
-```
+> Nilai keseluruhan efektivitas mesin
+
+$$
+OEE = \frac{AVB \times PFM \times QLY}{10000}
+$$
+
+```text
 OEE (%) = (AVB × PFM × QLY) / 10.000
 ```
 
@@ -132,11 +156,26 @@ OEE (%) = (AVB × PFM × QLY) / 10.000
 ---
 
 ### 💡 Efficiency — EFC
-> Seberapa efisien produksi dibandingkan jumlah ideal yang seharusnya sudah tercapai
 
-```
+> Seberapa efisien produksi dibandingkan jumlah ideal yang seharusnya tercapai
+
+$$
+CycleDisplay = \left(\frac{3600}{UPH}\right) \times QtyPerPallet
+$$
+
+$$
+IdealQty = \left\lfloor \frac{TotalWaktu}{CycleDisplay} \right\rfloor \times QtyPerPallet
+$$
+
+$$
+EFC = \frac{Good}{IdealQty} \times 100
+$$
+
+```text
 Cycle Display = (3600 / UPH) × Qty/Pallet
-Ideal Qty     = floor(Total Waktu (detik) / Cycle Display) × Qty/Pallet
+
+Ideal Qty = floor(Total Waktu (detik) / Cycle Display)
+            × Qty/Pallet
 
 EFC (%) = Good / Ideal Qty × 100
 ```
@@ -144,13 +183,64 @@ EFC (%) = Good / Ideal Qty × 100
 ---
 
 ### 🎯 Achievement — ACV
+
 > Persentase pencapaian produksi terhadap target shift
 
-```
+$$
+ACV = \frac{TotalQty}{Target} \times 100
+$$
+
+```text
 ACV (%) = Total Qty / Target × 100
 ```
 
 ---
+
+### 🧮 Total Waktu Produksi
+
+> Total waktu yang digunakan dalam perhitungan performa dan efisiensi
+
+$$
+TotalWaktu = Runtime + Downtime
+$$
+
+```text
+Total Waktu (detik) = Runtime + Downtime
+```
+
+---
+
+### 📦 Total Quantity
+
+> Total produk yang dihasilkan selama produksi
+
+$$
+TotalQty = Good + NG
+$$
+
+```text
+Total Qty = Good + NG
+```
+
+---
+
+### ⏱ Cycle Time
+
+> Waktu standar yang dibutuhkan untuk menghasilkan 1 unit produk
+
+$$
+CycleTime = \frac{3600}{UPH}
+$$
+
+```text
+Cycle Time (detik/unit) = 3600 / UPH
+```
+
+```
+
+Hasilnya nanti semua parameter (AVB, PFM, QLY, OEE, EFC, ACV) punya format yang seragam dan lebih enak dibaca di dashboard, PDF, maupun halaman Help/Info Formula.
+```
+
 
 ## 🎨 Indikator Warna
 
