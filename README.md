@@ -91,17 +91,16 @@ OEE terdiri dari 3 komponen utama yang dikalikan:
 
 Kalau maksudnya ingin tampilannya konsisten seperti AVB (ada judul, penjelasan, rumus matematika, dan format code block), bisa dibuat seperti ini:
 
-````md
+---
+
 ### 📈 Availability — AVB
 > Seberapa lama mesin benar-benar berjalan dari total waktu yang tersedia
 
-$$
-AVB = \frac{Runtime}{Runtime + Downtime} \times 100
-$$
+$$AVB = \frac{Runtime}{Runtime + Downtime} \times 100$$
 
-```text
+```
 AVB (%) = Runtime / (Runtime + Downtime) × 100
-````
+```
 
 ---
 
