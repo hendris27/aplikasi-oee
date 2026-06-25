@@ -352,7 +352,7 @@ window.toggleDowntime = async function (isAuto = false) {
 
     let mode = localStorage.getItem("mode") || "run";
     if (isAuto || mode === "run") localStorage.setItem("mode", "down");
-    if (Swal.isVisible()) return;
+    if (Swal.isVisible() && !isAuto) { Swal.close(); return; }
 
     const reasons = [
         "Not Filled In Yet", "5S", "CHANGE LABEL / RIBBON", "ELECTRICAL STAGE PROBLEM", "EQUIPMENT / M/C PROBLEM", "EQUIP SOLDER PROBLEM", "FCT / ICT / LIGHT PROBLEM", "JIG / PALLET PROBLEM", "KEYENCE PROBLEM", "MATERIAL PROBLEM", "MEETING", "MP FCV OJT", "MP FV OJT", "MP INSERT OJT", "NG FCT",
@@ -401,11 +401,6 @@ window.toggleDowntime = async function (isAuto = false) {
         localStorage.setItem("downtime_start_clock_str", timeStartStr);
         localStorage.setItem("lastModeUpdateTime", Date.now().toString());
         localStorage.setItem("mode", "down");
-        console.log("Downtime dimulai:", {
-            reason: final,
-            category: category,
-            startTime: timeStartStr
-        });
 
     } else {
         if (!isAuto) {
@@ -503,45 +498,92 @@ window.updateQty = async function (key, change) {
 
             localStorage.setItem("realCycleAvg", avgCycle.toFixed(2));
 
-            if (localStorage.getItem("mode") === "down") {
-                const dtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
-                const dtStartClock = localStorage.getItem("downtime_start_clock_str");
-                const reason = localStorage.getItem("downtimeGroup") || "Not Filled In Yet";
+            const uphNum = parseInt(localStorage.getItem("uph_display") || "0");
+            const targetCycleTime = uphNum > 0 ? 3600 / uphNum : 0;
+            const actualCycleTime = parseFloat(localStorage.getItem("realCycleVal")) || 0;
 
-                if (dtStartMs) {
-                    const dtEndMs = Date.now();
-                    const dtEndClock = formatDateTime(new Date(dtEndMs));
-                    const durationMs = dtEndMs - dtStartMs;
+            if (targetCycleTime > 0 && actualCycleTime > targetCycleTime) {
+                const overage = (actualCycleTime - targetCycleTime);
+                
+                if (localStorage.getItem('autoLogCycleOverage') === 'true') {
+                    const dtRecord = {
+                        date: new Date().toISOString().split('T')[0],
+                        machine: localStorage.getItem('machine') || '-',
+                        line: localStorage.getItem('line') || '-',
+                        type: 'PERFORMANCE',
+                        detail: `Cycle time overage: ${overage.toFixed(2)}s`,
+                        time: formatDateTime(new Date()),
+                        period: formatTime(overage * 1000),
+                        durationMs: overage * 1000,
+                        reason: 'Performance Loss - Cycle Overage',
+                        category: 'LOSS',
+                        model: localStorage.getItem("type") || '-',
+                        start: formatDateTime(new Date(now - (actualCycleTime * 1000))),
+                        end: formatDateTime(new Date(now))
+                    };
 
-                    if (durationMs >= 1000 && dtStartClock) {
-                        const dtRecord = {
-                            date: new Date().toISOString().split('T')[0],
-                            machine: localStorage.getItem('machine') || '-',
-                            model: localStorage.getItem("type") || '-',
-                            type: localStorage.getItem("downtimeCategory") || "DOWN",
-                            detail: reason,
-                            time: dtStartClock,
-                            period: formatTime(durationMs),
-                            start: dtStartClock,
-                            end: dtEndClock,
-                            durationMs: durationMs,
-                            reason: reason,
-                            category: localStorage.getItem("downtimeCategory") || "DOWN",
-                            line: localStorage.getItem('line') || '-',
-                            tech: '', job: '', executor: '', solution: ''
-                        };
+                    let dtLogs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
+                    dtLogs.push(dtRecord);
+                    localStorage.setItem("downtime_logs", JSON.stringify(dtLogs));
 
-                        let logs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
-                        logs.push(dtRecord);
-                        localStorage.setItem("downtime_logs", JSON.stringify(logs));
+                    let allDtLogs = JSON.parse(localStorage.getItem("all_downtime_logs") || "[]");
+                    allDtLogs.push(dtRecord);
+                    localStorage.setItem("all_downtime_logs", JSON.stringify(allDtLogs));
 
-                        let allDtLogs = JSON.parse(localStorage.getItem("all_downtime_logs") || "[]");
-                        allDtLogs.push(dtRecord);
-                        localStorage.setItem("all_downtime_logs", JSON.stringify(allDtLogs));
-
-                        sendToServer('/api/save-downtime', dtRecord);
-                    }
+                    sendToServer('/api/save-downtime', dtRecord);
+                    
+                    console.log(`[CYCLE] ✅ Auto-downtime logged: ${overage.toFixed(2)}s`);
                 }
+            }
+
+            if (localStorage.getItem("mode") === "down") {
+                if (Swal.isVisible()) Swal.close();
+
+                let dtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
+                let dtStartClock = localStorage.getItem("downtime_start_clock_str");
+                const reason = localStorage.getItem("downtimeGroup") || "Not Filled In Yet";
+                const category = localStorage.getItem("downtimeCategory") || "LOST";
+
+                if (!dtStartMs) {
+                    dtStartMs = Date.now();
+                    dtStartClock = formatDateTime(new Date(dtStartMs));
+                    localStorage.setItem("downtime_start_time_ms", dtStartMs.toString());
+                    localStorage.setItem("downtime_start_clock_str", dtStartClock);
+                    localStorage.setItem("downtimeGroup", reason);
+                    localStorage.setItem("downtimeCategory", category);
+                }
+
+                const dtEndMs = Date.now();
+                const dtEndClock = formatDateTime(new Date(dtEndMs));
+                const durationMs = dtEndMs - dtStartMs;
+
+                const dtRecord = {
+                    date: new Date().toISOString().split('T')[0],
+                    machine: localStorage.getItem('machine') || '-',
+                    model: localStorage.getItem("type") || '-',
+                    type: category,
+                    detail: reason,
+                    time: dtStartClock,
+                    period: formatTime(durationMs),
+                    start: dtStartClock,
+                    end: dtEndClock,
+                    durationMs: durationMs,
+                    reason: reason,
+                    category: category,
+                    line: localStorage.getItem('line') || '-',
+                    tech: '', job: '', executor: '', solution: ''
+                };
+
+
+                let logs = JSON.parse(localStorage.getItem("downtime_logs") || "[]");
+                logs.push(dtRecord);
+                localStorage.setItem("downtime_logs", JSON.stringify(logs));
+
+                let allDtLogs = JSON.parse(localStorage.getItem("all_downtime_logs") || "[]");
+                allDtLogs.push(dtRecord);
+                localStorage.setItem("all_downtime_logs", JSON.stringify(allDtLogs));
+
+                sendToServer('/api/save-downtime', dtRecord);
             }
 
             localStorage.setItem("mode", "run");
@@ -1431,19 +1473,26 @@ function startTime() {
 }
 
 function initKeyboardShortcuts() {
+    window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === 'z') {
+            e.preventDefault();
+            window.updateQty("good", 1);
+        }
+    }, true);
+
     document.addEventListener("keydown", (e) => {
         const k = e.key.toLowerCase();
         if (/^\d$/.test(k)) {
             sequence = (sequence + k).slice(-5);
             if (sequence === "77788") {
-                updateQty("nogood", 1);
+                window.updateQty("nogood", 1);
                 sequence = "";
             }
         } else { sequence = ""; }
 
         switch (k) {
             case 's': toggleSwiperAutoplay(); break;
-            case ' ': e.preventDefault(); toggleDowntime(); break;
+            case ' ': e.preventDefault(); window.toggleDowntime(); break;
             case 'r': e.preventDefault(); window.resetData(); break;
             case 'd': e.preventDefault(); window.openConfig(); break;
             case 'e': e.preventDefault(); window.exportToExcel(); break;
@@ -1616,10 +1665,16 @@ window.resetData = async function () {
     const savedExportHistory = localStorage.getItem('oee_export_history');
     const savedTypePresets = localStorage.getItem('type_presets');
     const lineBeingCleared = localStorage.getItem('line');
+    
     localStorage.clear();
     if (savedExportHistory) localStorage.setItem('oee_export_history', savedExportHistory);
     if (savedTypePresets) localStorage.setItem('type_presets', savedTypePresets);
+    
     await clearLiveStatus(lineBeingCleared);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    console.log('[STOP SHIFT] Reloading page...');
     location.reload();
 };
 

@@ -232,8 +232,7 @@
         var currentPage = 1;
         var pageSize = 25;
 
-        // Auto-detect berdasarkan hostname
-        var SERVER_IP = window.location.hostname; // Auto: localhost atau IP server
+        var SERVER_IP = window.location.hostname;
         var API_BASE = 'http://' + SERVER_IP + ':4000';
 
         document.addEventListener('DOMContentLoaded', function() {
