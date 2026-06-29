@@ -253,8 +253,20 @@
                         break;
                     }
                 }
+                if (!oeeData.length) {
+                    var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+                    oeeData = localOee.map(function(item, idx) {
+                        return normalizeOee(item, idx);
+                    });
+                }
             } catch (e) {
                 console.warn('Failed to fetch OEE from server:', e.message);
+                try {
+                    var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+                    oeeData = localOee.map(function(item, idx) {
+                        return normalizeOee(item, idx);
+                    });
+                } catch (localErr) {}
             }
 
             try {
