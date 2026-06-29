@@ -1699,8 +1699,6 @@ window.resetData = async function (options = {}) {
     
     await clearLiveStatus(lineBeingCleared);
     
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     console.log('[STOP SHIFT] Reloading page...');
     location.reload();
 };
@@ -1742,11 +1740,15 @@ function removeLocalLiveLine(lineName) {
 async function sendToServer(endpoint, payload) {
     for (const serverHost of SERVER_HOSTS) {
         try {
-            const res = await fetch(`${serverHost}${endpoint}`, {
+            const fetchOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
-            });
+            };
+            if (window.AbortSignal && AbortSignal.timeout) {
+                fetchOptions.signal = AbortSignal.timeout(3000);
+            }
+            const res = await fetch(`${serverHost}${endpoint}`, fetchOptions);
             if (res.ok) {
                 console.log(`[API] Sukses ke: ${serverHost}`);
                 return true;
