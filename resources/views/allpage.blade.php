@@ -279,7 +279,9 @@
         async function loadData() {
             try {
                 for (var i = 0; i < API_BASES.length; i++) {
-                    var r1 = await fetch(API_BASES[i] + '/api/read-oee');
+                    var r1 = await fetch(API_BASES[i] + '/api/read-oee?t=' + Date.now(), {
+                        cache: 'no-store'
+                    });
                     if (r1.ok) {
                         var d1 = await r1.json();
                         oeeData = d1.map(function(item, idx) {
@@ -310,7 +312,9 @@
 
             try {
                 for (var j = 0; j < API_BASES.length; j++) {
-                    var r2 = await fetch(API_BASES[j] + '/api/read-downtime');
+                    var r2 = await fetch(API_BASES[j] + '/api/read-downtime?t=' + Date.now(), {
+                        cache: 'no-store'
+                    });
                     if (r2.ok) {
                         var d2 = await r2.json();
                         downtimeData = d2.map(function(item, idx) {

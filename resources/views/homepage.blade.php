@@ -96,7 +96,7 @@
     <script>
         const WS_SERVER = `ws://${window.location.hostname}:3000`;
     </script>
-    <script src="{{ asset('js/app.js') }}"></script>
+    <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
 </body>
 
 </html>
