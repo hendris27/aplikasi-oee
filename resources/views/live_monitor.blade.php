@@ -609,6 +609,9 @@
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
         const CLEAR_HOLD_MS = 8000;
+        const STOPPED_LINES_KEY = 'lm_stopped_lines';
+        const REMOTE_STOP_COMMAND_KEY = 'oee_stop_command';
+        const STOPPED_LINE_TTL_MS = 12 * 60 * 60 * 1000;
         const lineStartTimes = {};
         const linesBeingCleared = new Set();
 
@@ -646,6 +649,52 @@
 
         function safeId(line) {
             return 'lmcard-' + String(line).replace(/[^a-zA-Z0-9_-]/g, '_');
+        }
+
+        function getStoppedLines() {
+            try {
+                return JSON.parse(localStorage.getItem(STOPPED_LINES_KEY) || '{}') || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function setStoppedLines(lines) {
+            localStorage.setItem(STOPPED_LINES_KEY, JSON.stringify(lines));
+        }
+
+        function rememberStoppedLine(lineName) {
+            const stoppedLines = getStoppedLines();
+            const currentData = liveLinesMap[lineName] || {};
+            stoppedLines[lineName] = {
+                run_start_ms: String(currentData.run_start_ms || ''),
+                stopped_at: Date.now()
+            };
+            setStoppedLines(stoppedLines);
+        }
+
+        function shouldHideStoppedLine(d) {
+            const lineName = String(d.line || '').trim();
+            if (!lineName) return false;
+
+            const stoppedLines = getStoppedLines();
+            const stopped = stoppedLines[lineName];
+            if (!stopped) return false;
+
+            if (Date.now() - Number(stopped.stopped_at || 0) > STOPPED_LINE_TTL_MS) {
+                delete stoppedLines[lineName];
+                setStoppedLines(stoppedLines);
+                return false;
+            }
+
+            const currentRunStart = String(d.run_start_ms || '');
+            if (currentRunStart && stopped.run_start_ms && currentRunStart !== String(stopped.run_start_ms)) {
+                delete stoppedLines[lineName];
+                setStoppedLines(stoppedLines);
+                return false;
+            }
+
+            return true;
         }
 
         function buildCardSkeleton(line) {
@@ -974,21 +1023,26 @@
             const confirmed = confirm(`Stop line ${lineName}?`);
             if (!confirmed) return;
 
-            if (!ws || ws.readyState !== WebSocket.OPEN) {
-                alert('WebSocket belum terhubung. Coba lagi sebentar.');
-                return;
-            }
-
             if (button) button.disabled = true;
-            ws.send(JSON.stringify({
+            localStorage.setItem(REMOTE_STOP_COMMAND_KEY, JSON.stringify({
+                id: `${Date.now()}-${lineName}`,
                 type: 'stop_line',
                 line: lineName,
+                source: 'live_monitor',
                 timestamp: Date.now()
             }));
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'stop_line',
+                    line: lineName,
+                    timestamp: Date.now()
+                }));
+            }
 
             clearLiveStatus(lineName);
             setTimeout(() => clearLiveStatus(lineName), 1500);
             setTimeout(() => clearLiveStatus(lineName), 5000);
+            rememberStoppedLine(lineName);
             linesBeingCleared.add(lineName);
             delete liveLinesMap[lineName];
             delete lineStartTimes[lineName];
@@ -1038,7 +1092,7 @@
                     if (!d.started) return;
 
                     const cleanLine = String(d.line || '').trim();
-                    if (cleanLine && !linesBeingCleared.has(cleanLine)) {
+                    if (cleanLine && !linesBeingCleared.has(cleanLine) && !shouldHideStoppedLine(d)) {
                         liveLinesMap[cleanLine] = {
                             ...d,
                             line: cleanLine

@@ -1782,6 +1782,31 @@ const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000;
 let lastGoodSignalTime = 0;
 let remoteStopInProgress = false;
+const REMOTE_STOP_COMMAND_KEY = 'oee_stop_command';
+let lastRemoteStopCommandId = '';
+
+function handleRemoteStopCommand(command) {
+    if (!command || command.type !== 'stop_line') return;
+
+    const signalLine = command.line ? String(command.line).trim() : '';
+    const webLine = String(localStorage.getItem("line") || "").trim();
+    const commandId = String(command.id || command.timestamp || '');
+
+    if (!signalLine || !webLine || signalLine !== webLine || remoteStopInProgress) return;
+    if (commandId && commandId === lastRemoteStopCommandId) return;
+
+    lastRemoteStopCommandId = commandId;
+    console.log(`Remote stop command received for line ${signalLine}`);
+    remoteStopInProgress = true;
+    window.resetData({ skipConfirm: true, source: command.source || 'live_monitor' });
+}
+
+function checkLocalStopCommand() {
+    try {
+        const command = JSON.parse(localStorage.getItem(REMOTE_STOP_COMMAND_KEY) || 'null');
+        handleRemoteStopCommand(command);
+    } catch (e) { }
+}
 
 window.wsStatus = 'disconnected';
 
@@ -1824,11 +1849,12 @@ function connectWebSocket() {
                     console.log('Duplicate signal ignored');
                 }
             } else if (signal === 'stop_line') {
-                const webLine = String(localStorage.getItem("line") || "").trim();
-                if (!signalLine || !webLine || signalLine !== webLine || remoteStopInProgress) return;
-                console.log(`Remote stop command received for line ${signalLine}`);
-                remoteStopInProgress = true;
-                window.resetData({ skipConfirm: true, source: 'live_monitor' });
+                handleRemoteStopCommand({
+                    type: 'stop_line',
+                    line: signalLine,
+                    source: 'live_monitor',
+                    timestamp: Date.now()
+                });
             }
         };
 
@@ -1859,6 +1885,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof WS_SERVER !== 'undefined') {
         connectWebSocket();
     }
+    checkLocalStopCommand();
+    setInterval(checkLocalStopCommand, 1000);
+});
+
+window.addEventListener('storage', (event) => {
+    if (event.key !== REMOTE_STOP_COMMAND_KEY || !event.newValue) return;
+    try {
+        handleRemoteStopCommand(JSON.parse(event.newValue));
+    } catch (e) { }
 });
 
 window.checkWsStatus = () => {
