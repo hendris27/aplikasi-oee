@@ -61,15 +61,34 @@ if (!function_exists('oee_edit_record')) {
 if (!function_exists('oee_delete_record')) {
     function oee_delete_record(Request $request, string $file)
     {
-        $id = trim((string) $request->query('id', ''));
-        if ($id === '') {
-            return oee_json_response(['ok' => false, 'message' => 'ID is required'])->setStatusCode(422);
+        $id = trim((string) ($request->query('id', '') ?: $request->input('id', '')));
+        $fingerprint = [
+            'date' => (string) $request->input('date', ''),
+            'line' => (string) $request->input('line', ''),
+            'machine' => (string) $request->input('machine', ''),
+            'model' => (string) $request->input('model', ''),
+            'start' => (string) $request->input('start', ''),
+            'stop_time' => (string) $request->input('stop_time', ''),
+        ];
+
+        if ($id === '' && implode('', $fingerprint) === '') {
+            return oee_json_response(['ok' => false, 'message' => 'ID or record data is required'])->setStatusCode(422);
         }
 
         $deleted = false;
-        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id, &$deleted) {
+        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id, $fingerprint, &$deleted) {
             if (!is_array($row)) return true;
-            if ((string)($row['id'] ?? '') === $id) {
+
+            $idMatches = $id !== '' && (string)($row['id'] ?? '') === $id;
+            $fingerprintMatches = implode('', $fingerprint) !== '' &&
+                (string)($row['date'] ?? '') === $fingerprint['date'] &&
+                (string)($row['line'] ?? '') === $fingerprint['line'] &&
+                (string)($row['machine'] ?? '') === $fingerprint['machine'] &&
+                (string)($row['model'] ?? '') === $fingerprint['model'] &&
+                (string)($row['start'] ?? '') === $fingerprint['start'] &&
+                (string)($row['stop_time'] ?? '') === $fingerprint['stop_time'];
+
+            if ($idMatches || $fingerprintMatches) {
                 $deleted = true;
                 return false;
             }
@@ -132,6 +151,7 @@ $jsonApiRoutes = function () {
     Route::post('/api/edit-downtime', fn (Request $request) => oee_edit_record($request, $downtimeFile));
 
     Route::delete('/api/delete-oee', fn (Request $request) => oee_delete_record($request, $oeeFile));
+    Route::post('/api/delete-oee', fn (Request $request) => oee_delete_record($request, $oeeFile));
     Route::delete('/api/delete-downtime', fn (Request $request) => oee_delete_record($request, $downtimeFile));
 
     Route::post('/api/live-update', function (Request $request) use ($liveFile) {

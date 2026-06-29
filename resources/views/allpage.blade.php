@@ -245,6 +245,9 @@
             try {
                 var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
                 if (!Array.isArray(localOee) || !localOee.length) return;
+                localOee = localOee.filter(function(item) {
+                    return !isEsp32ButtonRecord(item);
+                });
 
                 var exists = {};
                 oeeData.forEach(function(item) {
@@ -284,7 +287,9 @@
                     });
                     if (r1.ok) {
                         var d1 = await r1.json();
-                        oeeData = d1.map(function(item, idx) {
+                        oeeData = d1.filter(function(item) {
+                            return !isEsp32ButtonRecord(item);
+                        }).map(function(item, idx) {
                             return normalizeOee(item, idx);
                         });
                         break;
@@ -292,7 +297,9 @@
                 }
                 if (!oeeData.length) {
                     var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
-                    oeeData = localOee.map(function(item, idx) {
+                    oeeData = localOee.filter(function(item) {
+                        return !isEsp32ButtonRecord(item);
+                    }).map(function(item, idx) {
                         return normalizeOee(item, idx);
                     });
                 }
@@ -302,7 +309,9 @@
                 console.warn('Failed to fetch OEE from server:', e.message);
                 try {
                     var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
-                    oeeData = localOee.map(function(item, idx) {
+                    oeeData = localOee.filter(function(item) {
+                        return !isEsp32ButtonRecord(item);
+                    }).map(function(item, idx) {
                         return normalizeOee(item, idx);
                     });
                 } catch (localErr) {}
@@ -363,6 +372,10 @@
             };
         }
 
+        function isEsp32ButtonRecord(item) {
+            return String((item && item.model) || '').indexOf('ESP32-Button-') === 0;
+        }
+
         function normalizeDowntime(item, idx) {
             return {
                 id: item.id || idx,
@@ -395,6 +408,56 @@
                     console.warn('Delete failed:', API_BASES[i], res.status);
                 } catch (e) {
                     console.warn('Delete failed:', API_BASES[i], e.message);
+                }
+            }
+            return false;
+        }
+
+        async function deleteOeeOnServer(record) {
+            for (var i = 0; i < API_BASES.length; i++) {
+                try {
+                    var res = await fetch(API_BASES[i] + '/api/delete-oee?id=' + encodeURIComponent(record.id), {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        try {
+                            var json = await res.json();
+                            if (json.deleted) return true;
+                        } catch (e) {
+                            return true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Delete failed:', API_BASES[i], e.message);
+                }
+
+                try {
+                    var res2 = await fetch(API_BASES[i] + '/api/delete-oee', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: record.id,
+                            date: record.date,
+                            line: record.line,
+                            machine: record.machine,
+                            model: record.model,
+                            start: record.start,
+                            stop_time: record.stop_time
+                        })
+                    });
+                    if (res2.ok) {
+                        try {
+                            var json2 = await res2.json();
+                            if (json2.deleted) return true;
+                        } catch (e) {
+                            return true;
+                        }
+                    }
+                    console.warn('Delete fallback failed:', API_BASES[i], res2.status);
+                } catch (e) {
+                    console.warn('Delete fallback failed:', API_BASES[i], e.message);
                 }
             }
             return false;
@@ -1794,8 +1857,15 @@
                 confirmButtonColor: '#E8083E'
             }).then(async function(result) {
                 if (!result.isConfirmed) return;
-                await deleteOnServer('/api/delete-oee', d.id);
+                var deleted = await deleteOeeOnServer(d);
+                if (!deleted) {
+                    Swal.fire('Failed', 'Data belum terhapus dari server.', 'error');
+                    return;
+                }
                 removeLocalOeeHistory(d);
+                oeeData = oeeData.filter(function(item) {
+                    return !sameOeeRecord(item, d);
+                });
                 loadData();
             });
         }
