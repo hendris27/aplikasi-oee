@@ -235,6 +235,7 @@
         // Auto-detect berdasarkan hostname
         var SERVER_IP = window.location.hostname; // Auto: localhost atau IP server
         var API_BASE = window.location.origin;
+        var API_BASES = [window.location.origin, 'http://' + SERVER_IP + ':4000'];
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();
@@ -242,24 +243,30 @@
 
         async function loadData() {
             try {
-                var r1 = await fetch(API_BASE + '/api/read-oee');
-                if (r1.ok) {
-                    var d1 = await r1.json();
-                    oeeData = d1.map(function(item, idx) {
-                        return normalizeOee(item, idx);
-                    });
+                for (var i = 0; i < API_BASES.length; i++) {
+                    var r1 = await fetch(API_BASES[i] + '/api/read-oee');
+                    if (r1.ok) {
+                        var d1 = await r1.json();
+                        oeeData = d1.map(function(item, idx) {
+                            return normalizeOee(item, idx);
+                        });
+                        break;
+                    }
                 }
             } catch (e) {
                 console.warn('Failed to fetch OEE from server:', e.message);
             }
 
             try {
-                var r2 = await fetch(API_BASE + '/api/read-downtime');
-                if (r2.ok) {
-                    var d2 = await r2.json();
-                    downtimeData = d2.map(function(item, idx) {
-                        return normalizeDowntime(item, idx);
-                    });
+                for (var j = 0; j < API_BASES.length; j++) {
+                    var r2 = await fetch(API_BASES[j] + '/api/read-downtime');
+                    if (r2.ok) {
+                        var d2 = await r2.json();
+                        downtimeData = d2.map(function(item, idx) {
+                            return normalizeDowntime(item, idx);
+                        });
+                        break;
+                    }
                 }
             } catch (e) {
                 console.warn('Failed to fetch Downtime from server:', e.message);
