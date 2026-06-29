@@ -1680,7 +1680,13 @@ window.resetData = async function (options = {}) {
         oeeHistory.push(oeeRecord);
         localStorage.setItem('oee_export_history', JSON.stringify(oeeHistory));
 
-        await sendToServer('/api/save-oee', oeeRecord);
+        const savedToApi = await sendToServer('/api/save-oee', oeeRecord);
+        if (!savedToApi) {
+            sendWsMessage({
+                type: 'save_oee',
+                record: oeeRecord
+            });
+        }
     }
 
     const savedExportHistory = localStorage.getItem('oee_export_history');
@@ -1753,6 +1759,18 @@ async function sendToServer(endpoint, payload) {
     return false;
 }
 
+function sendWsMessage(payload) {
+    try {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(payload));
+            return true;
+        }
+    } catch (e) {
+        console.warn('[WS] Gagal kirim:', e.message);
+    }
+    return false;
+}
+
 const LIVE_PUSH_INTERVAL = 2000;
 let lastLivePushTime = 0;
 let pendingLivePayload = null;
@@ -1780,11 +1798,20 @@ function flushLivePush() {
     lastLivePushTime = Date.now();
     upsertLocalLiveLine(pendingLivePayload);
     sendToServer('/api/live-update', pendingLivePayload);
+    sendWsMessage({
+        type: 'live_update',
+        ...pendingLivePayload
+    });
 }
 
 async function clearLiveStatus(lineName) {
     if (!lineName || lineName === '-') return;
     removeLocalLiveLine(lineName);
+    sendWsMessage({
+        type: 'live_clear',
+        line: lineName,
+        timestamp: Date.now()
+    });
     await sendToServer('/api/live-clear', { line: lineName });
 }
 

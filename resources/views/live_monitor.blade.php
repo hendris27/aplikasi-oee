@@ -1139,6 +1139,19 @@
             }
         }
 
+        function applyLiveUpdatePayload(d) {
+            if (!d || !d.started) return;
+            const cleanLine = String(d.line || '').trim();
+            if (!cleanLine || linesBeingCleared.has(cleanLine) || shouldHideStoppedLine(d)) return;
+
+            linesBeingCleared.delete(cleanLine);
+            liveLinesMap[cleanLine] = {
+                ...d,
+                line: cleanLine
+            };
+            render();
+        }
+
         setInterval(updateAllCards, 1000);
 
         function connectWS() {
@@ -1155,10 +1168,7 @@
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'live_update') {
-                            if (msg.line) {
-                                linesBeingCleared.delete(String(msg.line).trim());
-                                loadLiveStatus();
-                            }
+                            applyLiveUpdatePayload(msg);
                         } else if (msg.type === 'live_clear') {
                             if (msg.line) {
                                 const cleanLine = String(msg.line).trim();

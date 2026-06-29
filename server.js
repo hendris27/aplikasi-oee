@@ -1,5 +1,68 @@
 const http = require('http');
 const { WebSocketServer } = require('ws');
+const fs = require('fs');
+const path = require('path');
+
+const FILE_OEE = path.join(__dirname, 'data_oee.json');
+const FILE_LIVE = path.join(__dirname, 'data_live_status.json');
+
+function readJSON(filePath) {
+    try {
+        if (!fs.existsSync(filePath)) return [];
+        const raw = fs.readFileSync(filePath, 'utf8');
+        return JSON.parse(raw) || [];
+    } catch (e) {
+        console.error('[FILE] Error:', e.message);
+        return [];
+    }
+}
+
+function writeJSON(filePath, data) {
+    try {
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+        return true;
+    } catch (e) {
+        console.error('[FILE] Error:', e.message);
+        return false;
+    }
+}
+
+function upsertLiveStatus(payload) {
+    const line = String(payload.line || '').trim();
+    if (!line || line === '-') return false;
+
+    const data = readJSON(FILE_LIVE).filter(row => row && typeof row === 'object');
+    const idx = data.findIndex(row => String(row.line || '').trim() === line);
+    const row = {
+        ...payload,
+        line,
+        lastUpdate: Date.now()
+    };
+
+    if (idx >= 0) data[idx] = { ...data[idx], ...row };
+    else data.push(row);
+
+    return writeJSON(FILE_LIVE, data);
+}
+
+function clearLiveStatus(line) {
+    const cleanLine = String(line || '').trim();
+    if (!cleanLine) return false;
+    const data = readJSON(FILE_LIVE).filter(row => {
+        if (!row || typeof row !== 'object') return true;
+        return String(row.line || '').trim() !== cleanLine;
+    });
+    return writeJSON(FILE_LIVE, data);
+}
+
+function saveOeeRecord(record) {
+    if (!record || typeof record !== 'object') return false;
+    const data = readJSON(FILE_OEE).filter(row => row && typeof row === 'object');
+    const id = record.id || Date.now();
+    const exists = data.some(row => String(row.id || '') === String(id));
+    if (!exists) data.push({ ...record, id });
+    return writeJSON(FILE_OEE, data);
+}
 
 const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -47,6 +110,12 @@ function broadcast(message, sender = null) {
 }
 
 wss.on('connection', (ws) => {
+    readJSON(FILE_LIVE).forEach(row => {
+        if (row && typeof row === 'object' && row.line) {
+            ws.send(JSON.stringify({ type: 'live_update', ...row }));
+        }
+    });
+
     ws.on('message', (raw) => {
         try {
             const msg = JSON.parse(raw.toString());
@@ -59,6 +128,28 @@ wss.on('connection', (ws) => {
                 });
                 const browserCount = broadcast(payload, ws);
                 console.log(`[COMMAND] Stop line=${msg.line} dikirim ke ${browserCount} browser`);
+            } else if (msg.type === 'live_update' && msg.line) {
+                const payload = {
+                    ...msg,
+                    type: 'live_update',
+                    line: String(msg.line).trim(),
+                    lastUpdate: Date.now()
+                };
+                upsertLiveStatus(payload);
+                const browserCount = broadcast(JSON.stringify(payload), ws);
+                console.log(`[LIVE] Update line=${payload.line} dikirim ke ${browserCount} browser`);
+            } else if (msg.type === 'live_clear' && msg.line) {
+                const cleanLine = String(msg.line).trim();
+                clearLiveStatus(cleanLine);
+                const browserCount = broadcast(JSON.stringify({
+                    type: 'live_clear',
+                    line: cleanLine,
+                    timestamp: Date.now()
+                }), ws);
+                console.log(`[LIVE] Clear line=${cleanLine} dikirim ke ${browserCount} browser`);
+            } else if (msg.type === 'save_oee' && msg.record) {
+                const ok = saveOeeRecord(msg.record);
+                console.log(`[DATA] Save OEE via WS ${ok ? 'OK' : 'FAILED'}`);
             }
         } catch (e) {
             console.warn('[WS] Pesan tidak valid:', e.message);
