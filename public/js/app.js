@@ -1528,13 +1528,16 @@ function isWorkTime() {
     return true;
 }
 
-window.resetData = async function () {
+window.resetData = async function (options = {}) {
+    const skipConfirm = !!options.skipConfirm;
     const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
-    const result = await Swal.fire({
-        title: 'Are you sure you want to stop?', icon: 'warning',
-        showCancelButton: true, confirmButtonText: 'Yes'
-    });
-    if (!result.isConfirmed) return;
+    if (!skipConfirm) {
+        const result = await Swal.fire({
+            title: 'Are you sure you want to stop?', icon: 'warning',
+            showCancelButton: true, confirmButtonText: 'Yes'
+        });
+        if (!result.isConfirmed) return;
+    }
 
     if (isStarted) {
         const activeDtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
@@ -1712,6 +1715,7 @@ let wsReconnectAttempts = 0;
 const WS_MAX_RECONNECT = 5;
 const WS_RECONNECT_DELAY = 3000;
 let lastGoodSignalTime = 0;
+let remoteStopInProgress = false;
 
 window.wsStatus = 'disconnected';
 
@@ -1753,6 +1757,12 @@ function connectWebSocket() {
                 } else {
                     console.log('Duplicate signal ignored');
                 }
+            } else if (signal === 'stop_line') {
+                const webLine = String(localStorage.getItem("line") || "").trim();
+                if (!signalLine || !webLine || signalLine !== webLine || remoteStopInProgress) return;
+                console.log(`Remote stop command received for line ${signalLine}`);
+                remoteStopInProgress = true;
+                window.resetData({ skipConfirm: true, source: 'live_monitor' });
             }
         };
 

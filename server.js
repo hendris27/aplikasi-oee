@@ -61,13 +61,7 @@ const server = http.createServer((req, res) => {
         }
 
         const message = line ? JSON.stringify({ type: 'good', line, timestamp: Date.now() }) : 'z';
-        let browserCount = 0;
-        wss.clients.forEach(client => {
-            if (client.readyState === 1) {
-                client.send(message);
-                browserCount++;
-            }
-        });
+        const browserCount = broadcast(message);
         console.log(`[BROADCAST] 📤 Kirim ke ${browserCount} browser`);
 
         res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -81,7 +75,35 @@ const server = http.createServer((req, res) => {
 
 const wss = new WebSocketServer({ server });
 
+function broadcast(message, sender = null) {
+    let browserCount = 0;
+    wss.clients.forEach(client => {
+        if (client !== sender && client.readyState === 1) {
+            client.send(message);
+            browserCount++;
+        }
+    });
+    return browserCount;
+}
+
 wss.on('connection', (ws) => {
+    ws.on('message', (raw) => {
+        try {
+            const msg = JSON.parse(raw.toString());
+            if (msg.type === 'stop_line' && msg.line) {
+                const payload = JSON.stringify({
+                    type: 'stop_line',
+                    line: String(msg.line).trim(),
+                    source: 'live_monitor',
+                    timestamp: Date.now()
+                });
+                const browserCount = broadcast(payload, ws);
+                console.log(`[COMMAND] Stop line=${msg.line} dikirim ke ${browserCount} browser`);
+            }
+        } catch (e) {
+            console.warn('[WS] Pesan tidak valid:', e.message);
+        }
+    });
     console.log('[BROWSER] ✅ Terhubung');
     ws.on('close', () => console.log('[BROWSER] ❌ Terputus'));
 });
