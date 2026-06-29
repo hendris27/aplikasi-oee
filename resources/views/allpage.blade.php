@@ -234,7 +234,7 @@
 
         // Auto-detect berdasarkan hostname
         var SERVER_IP = window.location.hostname; // Auto: localhost atau IP server
-        var API_BASE = 'http://' + SERVER_IP + ':4000';
+        var API_BASE = window.location.origin;
 
         document.addEventListener('DOMContentLoaded', function() {
             loadData();

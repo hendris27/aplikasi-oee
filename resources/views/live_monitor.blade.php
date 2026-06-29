@@ -591,7 +591,7 @@
 
     <script>
         const AUTO_DETECT_HOST = window.location.hostname;
-        const API_BASE = `http://${AUTO_DETECT_HOST}:4000`;
+        const API_BASE = window.location.origin;
         const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
