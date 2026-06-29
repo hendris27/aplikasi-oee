@@ -198,7 +198,7 @@
 
         .lm-card-headrow {
             display: flex;
-            align-items: baseline;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 4px;
         }
@@ -221,6 +221,45 @@
             text-transform: uppercase;
             background: #02864A;
             white-space: nowrap;
+        }
+
+        .lm-status-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .lm-btn-stop {
+            width: clamp(17px, 1.6vw, 22px);
+            height: clamp(17px, 1.6vw, 22px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(248, 249, 255, 0.45);
+            border-radius: 50%;
+            background: #E8083E;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .lm-btn-stop:hover {
+            background: #FB8D1A;
+        }
+
+        .lm-btn-stop:disabled {
+            cursor: wait;
+            opacity: 0.55;
+        }
+
+        .lm-stop-icon {
+            width: 42%;
+            height: 42%;
+            display: block;
+            background: #F8F9FF;
+            border-radius: 1px;
         }
 
         .lm-card.st-down .lm-card-badge,
@@ -615,7 +654,12 @@
                     <div class="lm-card-head">
                         <div class="lm-card-headrow">
                             <div class="lm-card-line" id="${id}-line"></div>
-                            <span class="lm-card-badge" id="${id}-badge">RUNNING</span>
+                            <div class="lm-status-actions">
+                                <span class="lm-card-badge" id="${id}-badge">RUNNING</span>
+                                <button class="lm-btn-stop" type="button" data-stop-line="${escapeHtml(line)}" title="Stop line">
+                                    <span class="lm-stop-icon"></span>
+                                </button>
+                            </div>
                         </div>
                         <div class="lm-card-sub" id="${id}-sub1"></div>
                         <div class="lm-card-sub" id="${id}-sub2"></div>
@@ -921,6 +965,34 @@
             const skeletonRebuilt = rebuildSkeletonIfNeeded();
             updateAllCards();
         }
+
+        function requestLineStop(line, button) {
+            const lineName = String(line || '').trim();
+            if (!lineName) return;
+
+            const confirmed = confirm(`Stop line ${lineName}?`);
+            if (!confirmed) return;
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('WebSocket belum terhubung. Coba lagi sebentar.');
+                return;
+            }
+
+            if (button) button.disabled = true;
+            ws.send(JSON.stringify({
+                type: 'stop_line',
+                line: lineName,
+                timestamp: Date.now()
+            }));
+        }
+
+        document.addEventListener('click', (event) => {
+            const stopButton = event.target.closest('.lm-btn-stop');
+            if (!stopButton) return;
+            event.preventDefault();
+            event.stopPropagation();
+            requestLineStop(stopButton.dataset.stopLine, stopButton);
+        });
 
 
         async function loadLiveStatus() {
