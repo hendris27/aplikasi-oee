@@ -1110,7 +1110,8 @@
                 let arr = null;
                 for (const apiBase of API_BASES) {
                     try {
-                        const res = await fetch(`${apiBase}/api/live-status`, {
+                        const res = await fetch(`${apiBase}/api/live-status?t=${Date.now()}`, {
+                            cache: 'no-store',
                             signal: AbortSignal.timeout(5000)
                         });
                         if (!res.ok) continue;
