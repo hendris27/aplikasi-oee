@@ -1528,6 +1528,8 @@ function isWorkTime() {
     return true;
 }
 
+let isResettingData = false;
+
 window.resetData = async function (options = {}) {
     const skipConfirm = !!options.skipConfirm;
     const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
@@ -1538,6 +1540,13 @@ window.resetData = async function (options = {}) {
         });
         if (!result.isConfirmed) return;
     }
+
+    isResettingData = true;
+    if (livePushTimer) {
+        clearTimeout(livePushTimer);
+        livePushTimer = null;
+    }
+    pendingLivePayload = null;
 
     if (isStarted) {
         const activeDtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
@@ -1657,6 +1666,7 @@ let pendingLivePayload = null;
 let livePushTimer = null;
 
 function queueLivePush(payload) {
+    if (isResettingData) return;
     if (!payload.line || payload.line === '-') return;
 
     pendingLivePayload = payload;
@@ -1672,6 +1682,7 @@ function queueLivePush(payload) {
 
 function flushLivePush() {
     livePushTimer = null;
+    if (isResettingData) return;
     if (!pendingLivePayload) return;
     lastLivePushTime = Date.now();
     sendToServer('/api/live-update', pendingLivePayload);

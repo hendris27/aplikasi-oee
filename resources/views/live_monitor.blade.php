@@ -595,6 +595,7 @@
         const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
+        const CLEAR_HOLD_MS = 8000;
         const lineStartTimes = {};
         const linesBeingCleared = new Set();
 
@@ -956,6 +957,8 @@
             }));
 
             clearLiveStatus(lineName);
+            setTimeout(() => clearLiveStatus(lineName), 1500);
+            setTimeout(() => clearLiveStatus(lineName), 5000);
             linesBeingCleared.add(lineName);
             delete liveLinesMap[lineName];
             delete lineStartTimes[lineName];
@@ -964,7 +967,7 @@
 
             setTimeout(() => {
                 linesBeingCleared.delete(lineName);
-            }, 300000);
+            }, CLEAR_HOLD_MS);
         }
 
         async function clearLiveStatus(lineName) {
@@ -1034,7 +1037,8 @@
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'live_update') {
-                            if (msg.line && !linesBeingCleared.has(String(msg.line).trim())) {
+                            if (msg.line) {
+                                linesBeingCleared.delete(String(msg.line).trim());
                                 loadLiveStatus();
                             }
                         } else if (msg.type === 'live_clear') {
@@ -1042,17 +1046,14 @@
                                 const cleanLine = String(msg.line).trim();
                                 linesBeingCleared.add(cleanLine);
                                 delete liveLinesMap[cleanLine];
+                                delete lineStartTimes[cleanLine];
+                                delete lastPayloadRunStartMs[cleanLine];
                                 render();
 
                                 setTimeout(() => {
+                                    linesBeingCleared.delete(cleanLine);
                                     loadLiveStatus();
-                                    setTimeout(() => {
-                                        linesBeingCleared.delete(cleanLine);
-                                        console.log(
-                                            `[Clear Timeout] Line ${cleanLine} dihapus dari tracking`
-                                        );
-                                    }, 300000);
-                                }, 500);
+                                }, CLEAR_HOLD_MS);
                             }
                         }
                     } catch (e) {}
