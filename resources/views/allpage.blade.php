@@ -241,6 +241,41 @@
             loadData();
         });
 
+        function mergeLocalOeeHistory() {
+            try {
+                var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+                if (!Array.isArray(localOee) || !localOee.length) return;
+
+                var exists = {};
+                oeeData.forEach(function(item) {
+                    var key = [
+                        item.date || '',
+                        item.line || '',
+                        item.machine || '',
+                        item.model || '',
+                        item.start || '',
+                        item.stop_time || ''
+                    ].join('|');
+                    exists[key] = true;
+                });
+
+                localOee.forEach(function(item) {
+                    var key = [
+                        item.date || '',
+                        item.line || '',
+                        item.machine || '',
+                        item.model || '',
+                        item.start || '',
+                        item.stop_time || ''
+                    ].join('|');
+                    if (!exists[key]) {
+                        oeeData.push(normalizeOee(item, oeeData.length));
+                        exists[key] = true;
+                    }
+                });
+            } catch (e) {}
+        }
+
         async function loadData() {
             try {
                 for (var i = 0; i < API_BASES.length; i++) {
@@ -259,6 +294,8 @@
                         return normalizeOee(item, idx);
                     });
                 }
+                mergeLocalOeeHistory();
+                oeeData = oeeData.slice().reverse();
             } catch (e) {
                 console.warn('Failed to fetch OEE from server:', e.message);
                 try {
@@ -267,6 +304,8 @@
                         return normalizeOee(item, idx);
                     });
                 } catch (localErr) {}
+                mergeLocalOeeHistory();
+                oeeData = oeeData.slice().reverse();
             }
 
             try {

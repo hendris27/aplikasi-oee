@@ -1,30 +1,5 @@
 const http = require('http');
 const { WebSocketServer } = require('ws');
-const fs = require('fs');
-const path = require('path');
-
-const FILE_OEE = path.join(__dirname, 'data_oee.json');
-
-function readJSON(filePath) {
-    try {
-        if (!fs.existsSync(filePath)) return [];
-        const raw = fs.readFileSync(filePath, 'utf8');
-        return JSON.parse(raw) || [];
-    } catch (e) {
-        console.error('[FILE] Error:', e.message);
-        return [];
-    }
-}
-
-function writeJSON(filePath, data) {
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (e) {
-        console.error('[FILE] Error:', e.message);
-    }
-}
-
-if (!fs.existsSync(FILE_OEE)) writeJSON(FILE_OEE, []);
 
 const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,33 +14,18 @@ const server = http.createServer((req, res) => {
 
     if (url.pathname === '/good' && req.method === 'GET') {
         const line = url.searchParams.get('line') || '';
-        console.log(`[ESP32] ✅ TERIMA SIGNAL /good dengan line=${line}`);
+        console.log(`[ESP32] Terima signal /good dengan line=${line}`);
 
         if (line) {
-            try {
-                const record = {
-                    id: Date.now(),
-                    machine: 'Line ' + line,
-                    model: 'ESP32-Button-' + line,
-                    good_count: 1,
-                    timestamp: new Date().toISOString()
-                };
-
-                let data = readJSON(FILE_OEE);
-                data.push(record);
-                writeJSON(FILE_OEE, data);
-                console.log(`[DATA] ✅ DISIMPAN ke data_oee.json | Total: ${data.length} records`);
-            } catch (e) {
-                console.error('[DATA] ❌ Error:', e.message);
-            }
+            console.log(`[DATA] Tidak simpan otomatis untuk line=${line}. Data OEE hanya dibuat dari input homepage saat Stop.`);
         }
 
         const message = line ? JSON.stringify({ type: 'good', line, timestamp: Date.now() }) : 'z';
         const browserCount = broadcast(message);
-        console.log(`[BROADCAST] 📤 Kirim ke ${browserCount} browser`);
+        console.log(`[BROADCAST] Kirim ke ${browserCount} browser`);
 
         res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end("OK");
+        res.end('OK');
         return;
     }
 
@@ -104,16 +64,16 @@ wss.on('connection', (ws) => {
             console.warn('[WS] Pesan tidak valid:', e.message);
         }
     });
-    console.log('[BROWSER] ✅ Terhubung');
-    ws.on('close', () => console.log('[BROWSER] ❌ Terputus'));
+    console.log('[BROWSER] Terhubung');
+    ws.on('close', () => console.log('[BROWSER] Terputus'));
 });
 
 server.listen(3000, '0.0.0.0', () => {
     console.log('===========================================');
-    console.log('   🚀 OEE WebSocket Server');
-    console.log('   📍 Port: 3000');
-    console.log('   🔌 ESP32: http://192.168.62.38:3000/good?line=<LINE>');
-    console.log('   💾 Data: data_oee.json');
+    console.log('   OEE WebSocket Server');
+    console.log('   Port: 3000');
+    console.log('   ESP32: http://192.168.62.38:3000/good?line=<LINE>');
+    console.log('   Data OEE: dibuat dari homepage saat Stop');
     console.log('===========================================');
-    console.log('[READY] ⏳ Menunggu signal dari ESP32...\n');
+    console.log('[READY] Menunggu signal dari ESP32...\n');
 });
