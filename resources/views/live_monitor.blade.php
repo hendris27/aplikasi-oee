@@ -984,6 +984,16 @@
                 line: lineName,
                 timestamp: Date.now()
             }));
+
+            linesBeingCleared.add(lineName);
+            delete liveLinesMap[lineName];
+            delete lineStartTimes[lineName];
+            delete lastPayloadRunStartMs[lineName];
+            render();
+
+            setTimeout(() => {
+                linesBeingCleared.delete(lineName);
+            }, 300000);
         }
 
         document.addEventListener('click', (event) => {
