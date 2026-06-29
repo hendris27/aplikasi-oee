@@ -1579,6 +1579,14 @@ function isWorkTime() {
 
 let isResettingData = false;
 
+function hasOeeReportInput() {
+    const line = String(localStorage.getItem('line') || '').trim();
+    const machine = String(localStorage.getItem('machine') || '').trim();
+    const model = String(localStorage.getItem('model') || '').trim();
+
+    return !!line && line !== '-' && !!machine && machine !== '-' && !!model && model !== '-';
+}
+
 window.resetData = async function (options = {}) {
     const skipConfirm = !!options.skipConfirm;
     const isStarted = localStorage.getItem('shiftStartedFlag') === 'true';
@@ -1597,7 +1605,7 @@ window.resetData = async function (options = {}) {
     }
     pendingLivePayload = null;
 
-    if (isStarted) {
+    if (isStarted && hasOeeReportInput()) {
         const activeDtStartMs = parseInt(localStorage.getItem("downtime_start_time_ms"));
         if (activeDtStartMs && localStorage.getItem("mode") === "down") {
             const activeDtEndMs = Date.now();
