@@ -58,12 +58,26 @@ if (!function_exists('oee_edit_record')) {
 if (!function_exists('oee_delete_record')) {
     function oee_delete_record(Request $request, string $file)
     {
-        $id = (string) $request->query('id', '');
-        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id) {
-            return (string)($row['id'] ?? '') !== $id;
+        $id = trim((string) $request->query('id', ''));
+        if ($id === '') {
+            return oee_json_response(['ok' => false, 'message' => 'ID is required'])->setStatusCode(422);
+        }
+
+        $deleted = false;
+        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id, &$deleted) {
+            if (!is_array($row)) return true;
+            if ((string)($row['id'] ?? '') === $id) {
+                $deleted = true;
+                return false;
+            }
+            return true;
         }));
-        oee_json_write($file, $data);
-        return oee_json_response(['ok' => true]);
+
+        if ($deleted) {
+            oee_json_write($file, $data);
+        }
+
+        return oee_json_response(['ok' => true, 'deleted' => $deleted]);
     }
 }
 

@@ -381,6 +381,44 @@
             };
         }
 
+        async function deleteOnServer(endpoint, id) {
+            for (var i = 0; i < API_BASES.length; i++) {
+                try {
+                    var res = await fetch(API_BASES[i] + endpoint + '?id=' + encodeURIComponent(id), {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) return true;
+                    console.warn('Delete failed:', API_BASES[i], res.status);
+                } catch (e) {
+                    console.warn('Delete failed:', API_BASES[i], e.message);
+                }
+            }
+            return false;
+        }
+
+        function sameOeeRecord(a, b) {
+            return String(a.id || '') === String(b.id || '') ||
+                (
+                    String(a.date || '') === String(b.date || '') &&
+                    String(a.line || '') === String(b.line || '') &&
+                    String(a.machine || '') === String(b.machine || '') &&
+                    String(a.model || '') === String(b.model || '') &&
+                    String(a.start || '') === String(b.start || '') &&
+                    String(a.stop_time || '') === String(b.stop_time || '')
+                );
+        }
+
+        function removeLocalOeeHistory(record) {
+            try {
+                var localOee = JSON.parse(localStorage.getItem('oee_export_history') || '[]');
+                if (!Array.isArray(localOee)) return;
+                localOee = localOee.filter(function(item) {
+                    return !sameOeeRecord(item, record);
+                });
+                localStorage.setItem('oee_export_history', JSON.stringify(localOee));
+            } catch (e) {}
+        }
+
         function extractShift(op) {
             var m = (op || '').match(/(\d)/);
             return m ? m[1] : '';
@@ -1752,9 +1790,8 @@
                 confirmButtonColor: '#E8083E'
             }).then(async function(result) {
                 if (!result.isConfirmed) return;
-                await fetch(API_BASE + '/api/delete-oee?id=' + d.id, {
-                    method: 'DELETE'
-                });
+                await deleteOnServer('/api/delete-oee', d.id);
+                removeLocalOeeHistory(d);
                 loadData();
             });
         }
