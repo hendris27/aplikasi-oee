@@ -4,7 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LIVE MONITOR - OEE ALL LINES</title>
+    <script>
+        (function () {
+            const TV_W = 1920;
+            const TV_H = 1080;
+            function applyZoom() {
+                const scaleX = window.screen.width / TV_W;
+                const scaleY = window.screen.height / TV_H;
+                const zoom = Math.min(scaleX, scaleY);
+                document.documentElement.style.zoom = zoom;
+            }
+            applyZoom();
+            window.addEventListener('resize', applyZoom);
+        })();
+    </script>
+    <title>LIVE MONITOR</title>
     <link rel="icon" href="{{ asset('favicon.jpg') }}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -173,7 +187,6 @@
 
         .lm-card.is-stale {
             opacity: 1;
-            /* Tidak redup lagi */
         }
 
         .lm-card-head {
@@ -878,7 +891,24 @@
             document.getElementById(`${id}-target`).textContent = parseInt(d.target || 0);
             document.getElementById(`${id}-tqty`).textContent = parseInt(d.tqty || 0);
             document.getElementById(`${id}-iqty`).textContent = parseInt(d.iqty || 0);
-            document.getElementById(`${id}-good`).textContent = parseInt(d.good || 0);
+            
+            const achievement = (d.target > 0) ? ((d.good / d.target) * 100).toFixed(1) : 0;
+            const achEl = document.getElementById(`${id}-good`);
+            achEl.textContent = achievement + '%';
+            
+            const achContainer = achEl.closest('.lm-prod-item');
+            if (achContainer) {
+                const achVal = parseFloat(achievement || 0);
+                achEl.style.color = '#F8F9FF';
+                if (achVal >= 100) {
+                    achContainer.style.backgroundColor = '#02864A';
+                } else if (achVal < 90) {
+                    achContainer.style.backgroundColor = '#E8083E';
+                } else {
+                    achContainer.style.backgroundColor = 'rgba(248,249,255,0.06)';
+                }
+            }
+            
             document.getElementById(`${id}-good2`).textContent = parseInt(d.good || 0);
             document.getElementById(`${id}-ng`).textContent = parseInt(d.ng || 0);
 

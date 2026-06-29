@@ -94,7 +94,6 @@
     </div> -->
 
     <script>
-        // WebSocket server untuk signal ESP32
         const WS_SERVER = `ws://${window.location.hostname}:3000`;
     </script>
     <script src="{{ asset('js/app.js') }}"></script>
