@@ -605,6 +605,7 @@
     <script>
         const AUTO_DETECT_HOST = window.location.hostname;
         const API_BASE = window.location.origin;
+        const API_BASES = [window.location.origin, `http://${AUTO_DETECT_HOST}:4000`];
         const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
@@ -1055,19 +1056,22 @@
         }
 
         async function clearLiveStatus(lineName) {
-            try {
-                await fetch(`${API_BASE}/api/live-clear`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        line: lineName
-                    }),
-                    signal: AbortSignal.timeout(5000)
-                });
-            } catch (e) {
-                console.warn('clearLiveStatus error:', e);
+            for (const apiBase of API_BASES) {
+                try {
+                    const res = await fetch(`${apiBase}/api/live-clear`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            line: lineName
+                        }),
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (res.ok) return;
+                } catch (e) {
+                    console.warn('clearLiveStatus error:', e);
+                }
             }
         }
 
@@ -1082,11 +1086,18 @@
 
         async function loadLiveStatus() {
             try {
-                const res = await fetch(`${API_BASE}/api/live-status`, {
-                    signal: AbortSignal.timeout(5000)
-                });
-                if (!res.ok) throw new Error('fetch failed');
-                const arr = await res.json();
+                let arr = null;
+                for (const apiBase of API_BASES) {
+                    try {
+                        const res = await fetch(`${apiBase}/api/live-status`, {
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        if (!res.ok) continue;
+                        arr = await res.json();
+                        break;
+                    } catch (e) {}
+                }
+                if (!arr) throw new Error('fetch failed');
                 liveLinesMap = {};
                 arr.forEach(d => {
                     if (!d.started) return;

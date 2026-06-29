@@ -1692,7 +1692,8 @@ window.resetData = async function (options = {}) {
 
 const AUTO_DETECT_HOST = window.location.hostname;
 const SERVER_HOSTS = [
-    window.location.origin
+    window.location.origin,
+    `http://${AUTO_DETECT_HOST}:4000`
 ];
 
 async function sendToServer(endpoint, payload) {
