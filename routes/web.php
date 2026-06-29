@@ -23,7 +23,10 @@ if (!function_exists('oee_json_write')) {
 if (!function_exists('oee_json_response')) {
     function oee_json_response($data)
     {
-        return response()->json($data)->header('Access-Control-Allow-Origin', '*');
+        return response()->json($data)
+            ->header('Access-Control-Allow-Origin', '*')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 }
 

@@ -344,6 +344,7 @@ window.openConfig = async function () {
             showConfirmButton: false
         });
         renderAll();
+        flushLivePush();
     }
 };
 
@@ -1738,13 +1739,13 @@ async function sendToServer(endpoint, payload) {
             const res = await fetch(`${serverHost}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                signal: AbortSignal.timeout(5000)
+                body: JSON.stringify(payload)
             });
             if (res.ok) {
                 console.log(`[API] Sukses ke: ${serverHost}`);
                 return true;
             }
+            console.warn(`[API] Gagal ke ${serverHost}: HTTP ${res.status}`);
         } catch (err) {
             console.warn(`[API] Gagal ke ${serverHost}:`, err.message);
         }
