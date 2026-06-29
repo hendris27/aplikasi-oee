@@ -287,10 +287,12 @@
                     });
                     if (r1.ok) {
                         var d1 = await r1.json();
-                        oeeData = d1.filter(function(item) {
-                            return !isEsp32ButtonRecord(item);
-                        }).map(function(item, idx) {
-                            return normalizeOee(item, idx);
+                        oeeData = d1.map(function(item, sourceIdx) {
+                            return { item: item, sourceIdx: sourceIdx };
+                        }).filter(function(entry) {
+                            return !isEsp32ButtonRecord(entry.item);
+                        }).map(function(entry, idx) {
+                            return normalizeOee(entry.item, idx, entry.sourceIdx);
                         });
                         break;
                     }
@@ -340,9 +342,10 @@
             applyFilters();
         }
 
-        function normalizeOee(item, idx) {
+        function normalizeOee(item, idx, sourceIdx) {
             return {
                 id: item.id || idx,
+                source_index: sourceIdx,
                 no: idx + 1,
                 date: item.date || '',
                 machine: item.machine || '-',
@@ -444,7 +447,8 @@
                             machine: record.machine,
                             model: record.model,
                             start: record.start,
-                            stop_time: record.stop_time
+                            stop_time: record.stop_time,
+                            source_index: record.source_index
                         })
                     });
                     if (res2.ok) {
