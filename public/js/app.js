@@ -1770,7 +1770,6 @@ function flushLivePush() {
     if (!pendingLivePayload) return;
     lastLivePushTime = Date.now();
     upsertLocalLiveLine(pendingLivePayload);
-    sendToServer('/api/live-update', pendingLivePayload);
 }
 
 async function clearLiveStatus(lineName) {
