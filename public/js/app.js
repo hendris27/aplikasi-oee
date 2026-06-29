@@ -1705,8 +1705,7 @@ window.resetData = async function (options = {}) {
 
 const AUTO_DETECT_HOST = window.location.hostname;
 const SERVER_HOSTS = [
-    window.location.origin,
-    `http://${AUTO_DETECT_HOST}:4000`
+    window.location.origin
 ];
 const LIVE_LOCAL_LINES_KEY = 'oee_live_lines';
 
