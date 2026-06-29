@@ -955,6 +955,7 @@
                 timestamp: Date.now()
             }));
 
+            clearLiveStatus(lineName);
             linesBeingCleared.add(lineName);
             delete liveLinesMap[lineName];
             delete lineStartTimes[lineName];
@@ -964,6 +965,23 @@
             setTimeout(() => {
                 linesBeingCleared.delete(lineName);
             }, 300000);
+        }
+
+        async function clearLiveStatus(lineName) {
+            try {
+                await fetch(`${API_BASE}/api/live-clear`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        line: lineName
+                    }),
+                    signal: AbortSignal.timeout(5000)
+                });
+            } catch (e) {
+                console.warn('clearLiveStatus error:', e);
+            }
         }
 
         document.addEventListener('click', (event) => {
