@@ -1695,6 +1695,34 @@ const SERVER_HOSTS = [
     window.location.origin,
     `http://${AUTO_DETECT_HOST}:4000`
 ];
+const LIVE_LOCAL_LINES_KEY = 'oee_live_lines';
+
+function getLocalLiveLines() {
+    try {
+        return JSON.parse(localStorage.getItem(LIVE_LOCAL_LINES_KEY) || '{}') || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function upsertLocalLiveLine(payload) {
+    if (!payload || !payload.line || payload.line === '-') return;
+    const lines = getLocalLiveLines();
+    lines[String(payload.line).trim()] = {
+        ...payload,
+        line: String(payload.line).trim(),
+        lastUpdate: Date.now()
+    };
+    localStorage.setItem(LIVE_LOCAL_LINES_KEY, JSON.stringify(lines));
+}
+
+function removeLocalLiveLine(lineName) {
+    const cleanLine = String(lineName || '').trim();
+    if (!cleanLine) return;
+    const lines = getLocalLiveLines();
+    delete lines[cleanLine];
+    localStorage.setItem(LIVE_LOCAL_LINES_KEY, JSON.stringify(lines));
+}
 
 async function sendToServer(endpoint, payload) {
     for (const serverHost of SERVER_HOSTS) {
@@ -1741,11 +1769,13 @@ function flushLivePush() {
     if (isResettingData) return;
     if (!pendingLivePayload) return;
     lastLivePushTime = Date.now();
+    upsertLocalLiveLine(pendingLivePayload);
     sendToServer('/api/live-update', pendingLivePayload);
 }
 
 async function clearLiveStatus(lineName) {
     if (!lineName || lineName === '-') return;
+    removeLocalLiveLine(lineName);
     await sendToServer('/api/live-clear', { line: lineName });
 }
 

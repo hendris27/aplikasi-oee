@@ -612,6 +612,7 @@
         const CLEAR_HOLD_MS = 8000;
         const STOPPED_LINES_KEY = 'lm_stopped_lines';
         const REMOTE_STOP_COMMAND_KEY = 'oee_stop_command';
+        const LIVE_LOCAL_LINES_KEY = 'oee_live_lines';
         const STOPPED_LINE_TTL_MS = 12 * 60 * 60 * 1000;
         const lineStartTimes = {};
         const linesBeingCleared = new Set();
@@ -696,6 +697,25 @@
             }
 
             return true;
+        }
+
+        function getLocalLiveStatus() {
+            try {
+                const lines = JSON.parse(localStorage.getItem(LIVE_LOCAL_LINES_KEY) || '{}') || {};
+                return Object.values(lines);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function removeLocalLiveLine(lineName) {
+            const cleanLine = String(lineName || '').trim();
+            if (!cleanLine) return;
+            try {
+                const lines = JSON.parse(localStorage.getItem(LIVE_LOCAL_LINES_KEY) || '{}') || {};
+                delete lines[cleanLine];
+                localStorage.setItem(LIVE_LOCAL_LINES_KEY, JSON.stringify(lines));
+            } catch (e) {}
         }
 
         function buildCardSkeleton(line) {
@@ -1056,6 +1076,7 @@
         }
 
         async function clearLiveStatus(lineName) {
+            removeLocalLiveLine(lineName);
             for (const apiBase of API_BASES) {
                 try {
                     const res = await fetch(`${apiBase}/api/live-clear`, {
@@ -1097,6 +1118,7 @@
                         break;
                     } catch (e) {}
                 }
+                if (!arr || !arr.length) arr = getLocalLiveStatus();
                 if (!arr) throw new Error('fetch failed');
                 liveLinesMap = {};
                 arr.forEach(d => {
