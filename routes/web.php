@@ -4,55 +4,67 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
-function oee_json_read(string $file): array
-{
-    if (!File::exists($file)) return [];
-    $data = json_decode(File::get($file), true);
-    return is_array($data) ? $data : [];
-}
-
-function oee_json_write(string $file, array $data): void
-{
-    File::put($file, json_encode(array_values($data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-}
-
-function oee_json_response($data)
-{
-    return response()->json($data)->header('Access-Control-Allow-Origin', '*');
-}
-
-function oee_save_record(Request $request, string $file)
-{
-    $data = oee_json_read($file);
-    $record = $request->all();
-    $record['id'] = $record['id'] ?? (int) round(microtime(true) * 1000);
-    $data[] = $record;
-    oee_json_write($file, $data);
-    return oee_json_response(['ok' => true, 'id' => $record['id']]);
-}
-
-function oee_edit_record(Request $request, string $file)
-{
-    $id = (string) $request->query('id', '');
-    $data = oee_json_read($file);
-    foreach ($data as &$row) {
-        if ((string)($row['id'] ?? '') === $id) {
-            $row = array_merge($row, $request->all(), ['id' => $row['id'] ?? $id]);
-            oee_json_write($file, $data);
-            return oee_json_response(['ok' => true]);
-        }
+if (!function_exists('oee_json_read')) {
+    function oee_json_read(string $file): array
+    {
+        if (!File::exists($file)) return [];
+        $data = json_decode(File::get($file), true);
+        return is_array($data) ? $data : [];
     }
-    return oee_json_response(['ok' => false, 'message' => 'Data not found'])->setStatusCode(404);
 }
 
-function oee_delete_record(Request $request, string $file)
-{
-    $id = (string) $request->query('id', '');
-    $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id) {
-        return (string)($row['id'] ?? '') !== $id;
-    }));
-    oee_json_write($file, $data);
-    return oee_json_response(['ok' => true]);
+if (!function_exists('oee_json_write')) {
+    function oee_json_write(string $file, array $data): void
+    {
+        File::put($file, json_encode(array_values($data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
+}
+
+if (!function_exists('oee_json_response')) {
+    function oee_json_response($data)
+    {
+        return response()->json($data)->header('Access-Control-Allow-Origin', '*');
+    }
+}
+
+if (!function_exists('oee_save_record')) {
+    function oee_save_record(Request $request, string $file)
+    {
+        $data = oee_json_read($file);
+        $record = $request->all();
+        $record['id'] = $record['id'] ?? (int) round(microtime(true) * 1000);
+        $data[] = $record;
+        oee_json_write($file, $data);
+        return oee_json_response(['ok' => true, 'id' => $record['id']]);
+    }
+}
+
+if (!function_exists('oee_edit_record')) {
+    function oee_edit_record(Request $request, string $file)
+    {
+        $id = (string) $request->query('id', '');
+        $data = oee_json_read($file);
+        foreach ($data as &$row) {
+            if ((string)($row['id'] ?? '') === $id) {
+                $row = array_merge($row, $request->all(), ['id' => $row['id'] ?? $id]);
+                oee_json_write($file, $data);
+                return oee_json_response(['ok' => true]);
+            }
+        }
+        return oee_json_response(['ok' => false, 'message' => 'Data not found'])->setStatusCode(404);
+    }
+}
+
+if (!function_exists('oee_delete_record')) {
+    function oee_delete_record(Request $request, string $file)
+    {
+        $id = (string) $request->query('id', '');
+        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id) {
+            return (string)($row['id'] ?? '') !== $id;
+        }));
+        oee_json_write($file, $data);
+        return oee_json_response(['ok' => true]);
+    }
 }
 
 Route::get('/', function () {
