@@ -70,16 +70,19 @@ if (!function_exists('oee_delete_record')) {
             'start' => (string) $request->input('start', ''),
             'stop_time' => (string) $request->input('stop_time', ''),
         ];
+        $sourceIndex = trim((string) $request->input('source_index', ''));
 
-        if ($id === '' && implode('', $fingerprint) === '') {
+        if ($id === '' && implode('', $fingerprint) === '' && $sourceIndex === '') {
             return oee_json_response(['ok' => false, 'message' => 'ID or record data is required'])->setStatusCode(422);
         }
 
         $deleted = false;
-        $data = array_values(array_filter(oee_json_read($file), function ($row) use ($id, $fingerprint, &$deleted) {
-            if (!is_array($row)) return true;
+        $data = [];
+        foreach (oee_json_read($file) as $index => $row) {
+            if (!is_array($row)) continue;
 
             $idMatches = $id !== '' && (string)($row['id'] ?? '') === $id;
+            $sourceIndexMatches = $sourceIndex !== '' && (string)$index === $sourceIndex;
             $fingerprintMatches = implode('', $fingerprint) !== '' &&
                 (string)($row['date'] ?? '') === $fingerprint['date'] &&
                 (string)($row['line'] ?? '') === $fingerprint['line'] &&
@@ -88,12 +91,12 @@ if (!function_exists('oee_delete_record')) {
                 (string)($row['start'] ?? '') === $fingerprint['start'] &&
                 (string)($row['stop_time'] ?? '') === $fingerprint['stop_time'];
 
-            if ($idMatches || $fingerprintMatches) {
+            if ($idMatches || $sourceIndexMatches || $fingerprintMatches) {
                 $deleted = true;
-                return false;
+                continue;
             }
-            return true;
-        }));
+            $data[] = $row;
+        }
 
         if ($deleted) {
             oee_json_write($file, $data);
