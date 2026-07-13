@@ -792,26 +792,26 @@ function renderAll() {
         });
 
         if (colorVal === null) return;
-        let color = "transparent";
+        let textColor = "";
         if (colorVal >= 100) {
-            color = "#02864A";
+            textColor = "#02864A";
         } else if (colorVal > 0 && colorVal < 90) {
-            color = "#E8083E";
+            textColor = "#E8083E";
         }
 
-        const textColor = color === "transparent" ? "" : "white";
         elements.forEach(el => {
+            el.style.color = textColor;
             const p = el.parentElement;
             if (p) {
-                p.style.backgroundColor = color;
-                p.style.color = textColor;
+                p.style.backgroundColor = "transparent";
+                p.style.color = "";
             }
         });
         if (id === "oee") {
             document.querySelectorAll('[id="box-teks"]').forEach(boxT => {
                 if (boxT.parentElement) {
-                    boxT.parentElement.style.backgroundColor = color;
-                    boxT.parentElement.style.color = textColor;
+                    boxT.parentElement.style.backgroundColor = "transparent";
+                    boxT.parentElement.style.color = "";
                 }
             });
         }
