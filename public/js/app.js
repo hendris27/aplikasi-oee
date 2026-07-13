@@ -176,24 +176,26 @@ document.addEventListener("DOMContentLoaded", async function () {
         if (!localStorage.getItem(k)) localStorage.setItem(k, defaultData[k]);
     });
 
-    swiperInstance = new Swiper(".swiper", {
-        loop: true,
-        loopedSlides: 3,
-        observer: true,
-        observeParents: true,
-        autoplay: {
-            delay: 8000,
-            disableOnInteraction: false
-        },
-        navigation: {
-            nextEl: '.swiper-button-next',
-            prevEl: '.swiper-button-prev',
-        },
-        pagination: {
-            el: '.swiper-pagination',
-            clickable: true
-        }
-    });
+    if (document.querySelector('.swiper')) {
+        swiperInstance = new Swiper(".swiper", {
+            loop: true,
+            loopedSlides: 3,
+            observer: true,
+            observeParents: true,
+            autoplay: {
+                delay: 8000,
+                disableOnInteraction: false
+            },
+            navigation: {
+                nextEl: '.swiper-button-next',
+                prevEl: '.swiper-button-prev',
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true
+            }
+        });
+    }
 
     if (localStorage.getItem("shiftStartedFlag") === "true") {
         startOEE();
@@ -890,7 +892,7 @@ function renderAll() {
         }
     }
     if (elModel) {
-        elModel.innerText = (get("model") || "OEE PROGRAM").toUpperCase();
+        elModel.innerText = (get("model") || "OEE APPLICATION").toUpperCase();
     }
 
     localStorage.setItem("oee_val", oee.toFixed(1));
@@ -1551,6 +1553,8 @@ function initKeyboardShortcuts() {
 }
 
 function toggleSwiperAutoplay() {
+    if (!swiperInstance || !swiperInstance.autoplay) return;
+
     const run = swiperInstance.autoplay.running;
     run ? swiperInstance.autoplay.stop() : swiperInstance.autoplay.start();
     Swal.fire({

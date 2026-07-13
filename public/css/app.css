@@ -7,6 +7,12 @@
     color: #F8F9FF;
 }
 
+:root {
+    --oee-header-height: clamp(84px, 11.5vh, 112px);
+    --oee-page-nav-height: clamp(52px, 7.5vh, 68px);
+    --oee-border: clamp(1px, 0.12vmin, 2px);
+}
+
 html,
 body {
     height: 100%;
@@ -212,11 +218,11 @@ input[type="number"]:focus {
     top: 0;
     left: 0;
     width: 100%;
-    height: 112px;
+    height: var(--oee-header-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 clamp(8px, 1.5vw, 20px);
     z-index: 1000;
     background: #573CFA !important;
     border-bottom: 2px solid #F8F9FF;
@@ -225,13 +231,14 @@ input[type="number"]:focus {
 .top-left {
     display: flex !important;
     align-items: center !important;
-    gap: 15px;
+    gap: clamp(6px, 1vw, 15px);
     flex: 1;
     z-index: 10;
 }
 
 .top-left .logo {
-    height: 100px;
+    height: clamp(52px, 10vh, 100px);
+    max-width: clamp(52px, 8vw, 110px);
     background: #F8F9FF;
     padding: 5px;
     border-radius: 4px;
@@ -239,7 +246,7 @@ input[type="number"]:focus {
 }
 
 .top-left .clock {
-    font-size: 50px;
+    font-size: clamp(16px, 3vw, 50px);
     white-space: nowrap;
 }
 
@@ -257,7 +264,7 @@ input[type="number"]:focus {
 }
 
 .cntrtxt h1.top {
-    font-size: 30px;
+    font-size: clamp(11px, 1vw, 18px);
     text-transform: uppercase;
     margin: 0 !important;
     padding: 0 !important;
@@ -265,7 +272,7 @@ input[type="number"]:focus {
 }
 
 .cntrtxt h1.bot {
-    font-size: 50px;
+    font-size: clamp(17px, 1.8vw, 34px);
     margin: 0 !important;
     padding: 0 !important;
     letter-spacing: 2px;
@@ -283,7 +290,7 @@ input[type="number"]:focus {
 }
 
 .top-right h4 {
-    font-size: 25px;
+    font-size: clamp(12px, 1.5vw, 25px);
     text-align: right;
 }
 
@@ -296,7 +303,7 @@ input[type="number"]:focus {
     background: transparent;
     border: none;
     border-radius: 8px;
-    padding: 5px;
+    padding: clamp(1px, 0.35vw, 5px);
     padding-top: 0px;
 }
 
@@ -304,17 +311,47 @@ input[type="number"]:focus {
     background: transparent;
     border: none;
     color: #F8F9FF;
-    font-size: 18px;
-    padding: 8px 16px;
+    font-size: clamp(11px, 1.1vw, 18px);
+    padding: clamp(4px, 0.55vw, 8px) clamp(6px, 0.9vw, 16px);
     border-radius: 6px;
     cursor: pointer;
     transition: 0.2s;
+}
+
+.top-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: clamp(0px, 0.5vw, 10px);
+    margin-top: clamp(2px, 1vh, 15px);
+    flex-wrap: nowrap;
 }
 
 .top-right .exp button:hover {
     background: #FB8D1A;
     box-shadow: 0px 4px 8px rgba(251, 141, 26, 0.3);
     transform: scale(1.05);
+}
+
+.top-right .exp .icon-button {
+    width: clamp(26px, 2vw, 34px);
+    height: clamp(26px, 2vw, 34px);
+    padding: 0;
+}
+
+.top-right .exp .icon-button i {
+    display: block;
+    font-size: clamp(12px, 1.1vw, 18px);
+    line-height: 1;
+    color: inherit;
+}
+
+.top-right .exp .icon-stop {
+    color: #FFD43B;
+}
+
+.top-right .exp .icon-logout {
+    color: #FF4D6D;
 }
 
 .button-group {
@@ -340,30 +377,37 @@ input[type="number"]:focus {
 .page {
     width: 100% !important;
     height: 100% !important;
-    padding-top: 110px !important;
+    padding-top: var(--oee-header-height) !important;
 }
 
 .container-page1 {
     width: 100%;
-    height: calc(100vh - 110px);
+    height: calc(100vh - var(--oee-header-height));
+    height: calc(100dvh - var(--oee-header-height));
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
-    border: 1px solid #F8F9FF;
+    border: var(--oee-border) solid #F8F9FF;
 }
 
 .box {
-    border: 1px solid #F8F9FF;
+    min-width: 0;
+    border: var(--oee-border) solid #F8F9FF;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 170px;
+    font-size: clamp(44px, 8.85vw, 170px);
+    line-height: 1;
 }
 
 .label {
-    font-size: 40px;
-    letter-spacing: 3px;
+    max-width: 100%;
+    padding-inline: clamp(2px, 0.5vw, 10px);
+    font-size: clamp(9px, 2.08vw, 40px);
+    line-height: 1.15;
+    letter-spacing: clamp(0px, 0.15vw, 3px);
     text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .bottom {
@@ -373,30 +417,34 @@ input[type="number"]:focus {
 }
 
 .small-box {
-    border: 1px solid #F8F9FF;
+    min-width: 0;
+    border: var(--oee-border) solid #F8F9FF;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: clamp(6px, 2vh, 20px);
 }
 
 .small-box h2 {
-    font-size: 80px;
+    font-size: clamp(28px, 4.17vw, 80px);
+    line-height: 1;
 }
 
 .container-page23 {
     width: 100%;
-    height: calc(100vh - 110px);
+    height: calc(100vh - var(--oee-header-height));
+    height: calc(100dvh - var(--oee-header-height));
     display: flex;
     flex-direction: column;
-    border: 1px solid #F8F9FF;
+    border: var(--oee-border) solid #F8F9FF;
 }
 
 .row {
     display: flex;
     width: 100%;
     flex: 1;
+    min-height: 0;
 }
 
 .left {
@@ -404,9 +452,11 @@ input[type="number"]:focus {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 50px;
-    letter-spacing: 2px;
-    border: 1px solid #F8F9FF;
+    padding: clamp(3px, 0.7vw, 12px);
+    font-size: clamp(14px, 2.6vw, 50px);
+    line-height: 1.1;
+    letter-spacing: clamp(0px, 0.1vw, 2px);
+    border: var(--oee-border) solid #F8F9FF;
     text-align: center;
 }
 
@@ -415,8 +465,11 @@ input[type="number"]:focus {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 80px;
-    border: 1px solid #F8F9FF;
+    min-width: 0;
+    padding: clamp(3px, 0.7vw, 12px);
+    font-size: clamp(30px, 4.17vw, 80px);
+    line-height: 1;
+    border: var(--oee-border) solid #F8F9FF;
 }
 
 .result-center {
@@ -424,31 +477,210 @@ input[type="number"]:focus {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 6px;
-    border: 1px solid #F8F9FF;
+    min-width: 0;
+    gap: clamp(3px, 0.4vw, 6px);
+    border: var(--oee-border) solid #F8F9FF;
 }
 
 .result-center .mid {
-    font-size: 80px;
+    font-size: clamp(30px, 4.17vw, 80px);
 }
 
 .result-center .small {
-    font-size: 50px;
+    font-size: clamp(18px, 2.6vw, 50px);
 }
 
 .warning-blink {
     color: #E8083E !important;
-    font-size: 80px;
+    font-size: clamp(28px, 4.17vw, 80px);
     animation: blinker 1s linear infinite;
 }
 
 .pageref {
     display: flex;
     justify-content: center;
-    gap: 10px;
-    margin-top: 50px;
+    gap: clamp(4px, 0.7vw, 10px);
+    margin-top: clamp(12px, 4vh, 50px);
     flex-wrap: wrap;
     text-align: center;
+}
+
+.pageref button {
+    font-size: clamp(11px, 1.2vw, 18px);
+    padding: clamp(4px, 0.55vw, 8px) clamp(8px, 0.9vw, 16px);
+}
+
+.pageref .txt {
+    font-size: clamp(9px, 1.05vw, 16px);
+    line-height: 1.1;
+}
+
+.perpage-body {
+    overflow: hidden;
+}
+
+.perpage-shell {
+    height: 100vh !important;
+    height: 100dvh !important;
+    overflow: hidden;
+}
+
+.perpage-shell .container-page1,
+.perpage-shell .container-page23 {
+    height: calc(100vh - var(--oee-header-height) - var(--oee-page-nav-height));
+    height: calc(100dvh - var(--oee-header-height) - var(--oee-page-nav-height));
+}
+
+.perpage-shell .pageref {
+    width: 100%;
+    height: var(--oee-page-nav-height);
+    margin: 0;
+    padding: clamp(4px, 0.6vh, 8px) clamp(8px, 1vw, 16px);
+    align-items: center;
+    background: #1C1A27;
+    border-top: var(--oee-border) solid #F8F9FF;
+}
+
+@media (max-width: 900px) {
+    :root {
+        --oee-header-height: 92px;
+    }
+
+    .top-right h4 {
+        display: none;
+    }
+
+    .top-right {
+        max-width: 48%;
+    }
+
+    .cntrtxt {
+        left: 46%;
+    }
+}
+
+@media (max-width: 640px) {
+    :root {
+        --oee-header-height: 98px;
+        --oee-page-nav-height: 58px;
+    }
+
+    .top-bar {
+        display: grid;
+        grid-template-columns: minmax(76px, 1fr) minmax(140px, 2fr);
+        grid-template-rows: 48px 48px;
+        align-content: center;
+        padding: 1px 6px;
+    }
+
+    .top-left {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .top-left .logo {
+        width: 40px;
+        height: 40px;
+        padding: 2px;
+    }
+
+    .top-left .clock {
+        font-size: clamp(10px, 3vw, 14px);
+    }
+
+    .cntrtxt {
+        position: static;
+        grid-column: 2;
+        grid-row: 1;
+        transform: none;
+        align-items: flex-end;
+        padding-right: 4px;
+    }
+
+    .cntrtxt h1.top {
+        font-size: clamp(10px, 3vw, 14px);
+    }
+
+    .cntrtxt h1.bot {
+        font-size: clamp(15px, 4.8vw, 22px);
+    }
+
+    .top-right {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        width: 100%;
+        max-width: none;
+        align-items: stretch;
+    }
+
+    .top-actions {
+        width: 100%;
+        justify-content: space-between;
+        margin: 0;
+    }
+
+    .top-right .exp {
+        min-width: 0;
+        padding: 0;
+    }
+
+    .top-right .exp button {
+        font-size: clamp(8px, 2.55vw, 11px);
+        padding: 5px clamp(3px, 1vw, 6px);
+        white-space: nowrap;
+    }
+
+    .bottom {
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+    }
+
+    .container-page1 {
+        grid-template-rows: 42% 58%;
+    }
+
+    .label {
+        font-size: clamp(9px, 3.2vw, 14px);
+    }
+
+    .left {
+        width: 38%;
+        font-size: clamp(12px, 4vw, 18px);
+    }
+
+    .right,
+    .result-center {
+        width: 62%;
+    }
+
+    .right,
+    .result-center .mid,
+    .warning-blink {
+        font-size: clamp(25px, 9vw, 42px);
+    }
+
+    .pageref .txt {
+        display: none;
+    }
+}
+
+@media (max-height: 520px) and (min-width: 641px) {
+    :root {
+        --oee-header-height: 72px;
+        --oee-page-nav-height: 44px;
+    }
+
+    .top-left .logo {
+        height: 58px;
+    }
+
+    .top-actions {
+        margin-top: 0;
+    }
+
+    .small-box {
+        gap: 3px;
+    }
 }
 
 .link-home {

@@ -25,10 +25,10 @@
         </div>
         <div class="cntrtxt">
             <h1 class="top">BE LINE</h1>
-            <h1 class="bot">OEE PROGRAM</h1>
+            <h1 class="bot">OEE APPLICATION</h1>
         </div>
         <div class="top-right">
-            <h4>PRODUCTION 2 - ENGINEERING 2</h4>
+            <h4>PRODUCTION 2</h4>
         </div>
     </div>
 
@@ -1165,7 +1165,8 @@
                 worksheet.getCell('G' + currRow).value = 'END';
                 worksheet.getCell('H' + currRow).value = 'OUTPUT';
                 ['A' + currRow, 'B' + currRow, 'C' + currRow, 'D' + currRow, 'F' + currRow, 'G' + currRow, 'H' +
-                    currRow]
+                    currRow
+                ]
                 .forEach(function(pos) {
                     var c = worksheet.getCell(pos);
                     c.font = fontPart;
@@ -1597,7 +1598,8 @@
                     }];
                     y = hdrRow(opCols, y);
                     var opPh = (d.production_history && d.production_history.length > 0) ? d.production_history : [
-                    null];
+                        null
+                    ];
                     opPh.forEach(function(op, i) {
                         var model = op ? (op.model_name || d.model || '-') : (d.model || '-');
                         var out = op ? Number(op.good || 0) : Number(d.good || 0);
@@ -2449,7 +2451,7 @@
                 var h = Math.floor(s / 3600);
                 var m = Math.floor((s % 3600) / 60);
                 return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2,
-                '0');
+                    '0');
             }
 
             function todayStr() {

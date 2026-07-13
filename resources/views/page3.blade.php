@@ -23,7 +23,7 @@
 
         <div class="row">
             <div class="left">DOWNTIME (H)</div>
-            <div class="right 'warning-blink'" id="downtime">00:00:00</div>
+            <div class="right warning-blink" id="downtime">00:00:00</div>
         </div>
 
     </div>
@@ -42,7 +42,6 @@
         </div>
         <div class="txt">
             <h6>Clock</h6>
-            <div id="txt"></div>
-        </div>
+            <div id="txt-bottom"></div>
         </div>
     </div>

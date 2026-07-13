@@ -8,6 +8,7 @@
     <link rel="icon" href="{{ asset('favicon.jpg') }}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 
@@ -20,39 +21,7 @@
 
 <body>
 
-    <div class="top-bar">
-        <div class="top-left">
-            <img src="{{ asset('favicon.png') }}" alt="SIIX LOGO" class="logo">
-            <div id="txt" class="clock"></div>
-        </div>
-
-        <div class="cntrtxt">
-            <h1 class="top" id="txtedt">BE LINE</h1>
-            <h1 class="bot" id="typscn">OEE PROGRAM</h1>
-        </div>
-
-        <div class="top-right">
-            <h4>PRODUCTION 2 - ENGINEERING 2</h4>
-            <div
-                style="display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 15px; flex-wrap: wrap;">
-                <div class="exp">
-                    <button onclick="window.location.href='/live'">Live Monitor</button>
-                </div>
-                <div class="exp">
-                    <button onclick="window.location.href='/all'">Report</button>
-                </div>
-                <div class="exp">
-                    <button onclick="openConfig()">Setting</button>
-                </div>
-                <div class="exp">
-                    <button onclick="resetData()">Stop</button>
-                </div>
-                <div class="exp">
-                    <button onclick="toggleDowntime()" id="btn-downtime">Downtime</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('partials.topbar')
 
     <div class="swiper">
         <div class="swiper-wrapper">
@@ -95,6 +64,7 @@
 
     <script>
         const WS_SERVER = `ws://${window.location.hostname}:3000`;
+
     </script>
     <script src="{{ asset('js/app.js') }}?v={{ filemtime(public_path('js/app.js')) }}"></script>
 </body>

@@ -64,6 +64,22 @@ return [
             ]) : [],
         ],
 
+        'trn' => [
+            'driver' => env('TRN_DB_CONNECTION', 'mysql'),
+            'host' => env('TRN_DB_HOST', '127.0.0.1'),
+            'port' => env('TRN_DB_PORT', '3306'),
+            'database' => env('TRN_DB_DATABASE', 'db_training'),
+            'username' => env('TRN_DB_USERNAME'),
+            'password' => env('TRN_DB_PASSWORD'),
+            'unix_socket' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

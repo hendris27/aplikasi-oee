@@ -1,26 +1,32 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OeeController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Route;
 
-if (!function_exists('oee_json_read')) {
+if (! function_exists('oee_json_read')) {
     function oee_json_read(string $file): array
     {
-        if (!File::exists($file)) return [];
+        if (! File::exists($file)) {
+            return [];
+        }
         $data = json_decode(File::get($file), true);
+
         return is_array($data) ? $data : [];
     }
 }
 
-if (!function_exists('oee_json_write')) {
+if (! function_exists('oee_json_write')) {
     function oee_json_write(string $file, array $data): void
     {
         File::put($file, json_encode(array_values($data), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }
 
-if (!function_exists('oee_json_response')) {
+if (! function_exists('oee_json_response')) {
     function oee_json_response($data)
     {
         return response()->json($data)
@@ -30,7 +36,7 @@ if (!function_exists('oee_json_response')) {
     }
 }
 
-if (!function_exists('oee_save_record')) {
+if (! function_exists('oee_save_record')) {
     function oee_save_record(Request $request, string $file)
     {
         $data = oee_json_read($file);
@@ -38,27 +44,30 @@ if (!function_exists('oee_save_record')) {
         $record['id'] = $record['id'] ?? (int) round(microtime(true) * 1000);
         $data[] = $record;
         oee_json_write($file, $data);
+
         return oee_json_response(['ok' => true, 'id' => $record['id']]);
     }
 }
 
-if (!function_exists('oee_edit_record')) {
+if (! function_exists('oee_edit_record')) {
     function oee_edit_record(Request $request, string $file)
     {
         $id = (string) $request->query('id', '');
         $data = oee_json_read($file);
         foreach ($data as &$row) {
-            if ((string)($row['id'] ?? '') === $id) {
+            if ((string) ($row['id'] ?? '') === $id) {
                 $row = array_merge($row, $request->all(), ['id' => $row['id'] ?? $id]);
                 oee_json_write($file, $data);
+
                 return oee_json_response(['ok' => true]);
             }
         }
+
         return oee_json_response(['ok' => false, 'message' => 'Data not found'])->setStatusCode(404);
     }
 }
 
-if (!function_exists('oee_delete_record')) {
+if (! function_exists('oee_delete_record')) {
     function oee_delete_record(Request $request, string $file)
     {
         $id = trim((string) ($request->query('id', '') ?: $request->input('id', '')));
@@ -79,20 +88,23 @@ if (!function_exists('oee_delete_record')) {
         $deleted = false;
         $data = [];
         foreach (oee_json_read($file) as $index => $row) {
-            if (!is_array($row)) continue;
+            if (! is_array($row)) {
+                continue;
+            }
 
-            $idMatches = $id !== '' && (string)($row['id'] ?? '') === $id;
-            $sourceIndexMatches = $sourceIndex !== '' && (string)$index === $sourceIndex;
+            $idMatches = $id !== '' && (string) ($row['id'] ?? '') === $id;
+            $sourceIndexMatches = $sourceIndex !== '' && (string) $index === $sourceIndex;
             $fingerprintMatches = implode('', $fingerprint) !== '' &&
-                (string)($row['date'] ?? '') === $fingerprint['date'] &&
-                (string)($row['line'] ?? '') === $fingerprint['line'] &&
-                (string)($row['machine'] ?? '') === $fingerprint['machine'] &&
-                (string)($row['model'] ?? '') === $fingerprint['model'] &&
-                (string)($row['start'] ?? '') === $fingerprint['start'] &&
-                (string)($row['stop_time'] ?? '') === $fingerprint['stop_time'];
+                (string) ($row['date'] ?? '') === $fingerprint['date'] &&
+                (string) ($row['line'] ?? '') === $fingerprint['line'] &&
+                (string) ($row['machine'] ?? '') === $fingerprint['machine'] &&
+                (string) ($row['model'] ?? '') === $fingerprint['model'] &&
+                (string) ($row['start'] ?? '') === $fingerprint['start'] &&
+                (string) ($row['stop_time'] ?? '') === $fingerprint['stop_time'];
 
             if ($idMatches || $sourceIndexMatches || $fingerprintMatches) {
                 $deleted = true;
+
                 continue;
             }
             $data[] = $row;
@@ -106,35 +118,26 @@ if (!function_exists('oee_delete_record')) {
     }
 }
 
-Route::get('/', function () {
-    return view('homepage');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'create'])->name('login');
+    Route::post('/login', [AuthController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('login.store');
 });
 
-Route::get('/page1', function () {
-    return view('page1');
+Route::middleware('auth')->group(function () {
+    Route::view('/', 'homepage')->name('home');
+    Route::view('/page1', 'perpage', ['pageView' => 'page1', 'pageTitle' => 'OEE - Page 1']);
+    Route::view('/page2', 'perpage', ['pageView' => 'page2', 'pageTitle' => 'OEE - Page 2']);
+    Route::view('/page3', 'perpage', ['pageView' => 'page3', 'pageTitle' => 'OEE - Page 3']);
+    Route::view('/all', 'allpage');
+    Route::view('/live', 'live_monitor');
+    Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 });
 
-Route::get('/page2', function () {
-    return view('page2');
-});
+Route::get('/api/model-list', [OeeController::class, 'modelList']);
 
-Route::get('/page3', function () {
-    return view('page3');
-});
-
-Route::get('/all', function () {
-    return view('allpage');
-});
-
-Route::get('/live', function () {
-    return view('live_monitor');
-});
-
-use App\Http\Controllers\OeeController;
-
-Route::get('/api/model-list', [App\Http\Controllers\OeeController::class, 'modelList']);
-
-Route::get('/cari-oee', [App\Http\Controllers\OeeController::class, 'cariData']);
+Route::get('/cari-oee', [OeeController::class, 'cariData']);
 
 Route::get('/good', [OeeController::class, 'esp32Trigger']);
 
@@ -159,7 +162,7 @@ $jsonApiRoutes = function () {
 
     Route::post('/api/live-update', function (Request $request) use ($liveFile) {
         $payload = $request->all();
-        $line = trim((string)($payload['line'] ?? ''));
+        $line = trim((string) ($payload['line'] ?? ''));
         if ($line === '' || $line === '-') {
             return oee_json_response(['ok' => false, 'message' => 'Line is required'])->setStatusCode(422);
         }
@@ -167,8 +170,10 @@ $jsonApiRoutes = function () {
         $data = oee_json_read($liveFile);
         $found = false;
         foreach ($data as &$row) {
-            if (!is_array($row)) continue;
-            if (trim((string)($row['line'] ?? '')) === $line) {
+            if (! is_array($row)) {
+                continue;
+            }
+            if (trim((string) ($row['line'] ?? '')) === $line) {
                 $row = array_merge($row, $payload, [
                     'line' => $line,
                     'lastUpdate' => (int) round(microtime(true) * 1000),
@@ -178,25 +183,30 @@ $jsonApiRoutes = function () {
             }
         }
 
-        if (!$found) {
+        if (! $found) {
             $payload['line'] = $line;
             $payload['lastUpdate'] = (int) round(microtime(true) * 1000);
             $data[] = $payload;
         }
 
         oee_json_write($liveFile, $data);
+
         return oee_json_response(['ok' => true]);
     });
 
     Route::post('/api/live-clear', function (Request $request) use ($liveFile) {
-        $line = trim((string)$request->input('line', ''));
+        $line = trim((string) $request->input('line', ''));
         $data = array_values(array_filter(oee_json_read($liveFile), function ($row) use ($line) {
-            if (!is_array($row)) return true;
-            return trim((string)($row['line'] ?? '')) !== $line;
+            if (! is_array($row)) {
+                return true;
+            }
+
+            return trim((string) ($row['line'] ?? '')) !== $line;
         }));
         oee_json_write($liveFile, $data);
+
         return oee_json_response(['ok' => true]);
     });
 };
 
-Route::withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class])->group($jsonApiRoutes);
+Route::withoutMiddleware([ValidateCsrfToken::class])->group($jsonApiRoutes);
