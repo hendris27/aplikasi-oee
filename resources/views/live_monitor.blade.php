@@ -873,15 +873,14 @@
 
             const oeeMain = oeeEl ? oeeEl.closest('.lm-oee-main') : null;
             if (oeeMain) {
+                oeeMain.style.backgroundColor = 'transparent';
+                oeeMain.style.color = '';
                 if (realOee >= 100) {
-                    oeeMain.style.backgroundColor = '#02864A';
-                    oeeMain.style.color = 'white';
+                    oeeEl.style.color = '#02864A';
                 } else if (realOee < 90) {
-                    oeeMain.style.backgroundColor = '#E8083E';
-                    oeeMain.style.color = 'white';
+                    oeeEl.style.color = '#E8083E';
                 } else {
-                    oeeMain.style.backgroundColor = 'transparent';
-                    oeeMain.style.color = '';
+                    oeeEl.style.color = '';
                 }
             }
 
@@ -891,15 +890,14 @@
                 const container = el.closest('.lm-metric-item');
                 if (!container) return;
                 const val = parseFloat(value || 0);
+                container.style.backgroundColor = 'rgba(248,249,255,0.06)';
+                container.style.color = '';
                 if (val >= 100) {
-                    container.style.backgroundColor = '#02864A';
-                    container.style.color = 'white';
+                    el.style.color = '#02864A';
                 } else if (val < 90) {
-                    container.style.backgroundColor = '#E8083E';
-                    container.style.color = 'white';
+                    el.style.color = '#E8083E';
                 } else {
-                    container.style.backgroundColor = 'rgba(248,249,255,0.06)';
-                    container.style.color = '';
+                    el.style.color = '';
                 }
             };
 
