@@ -1,1 +1,31 @@
+[
+    {
+        "line": "64",
+        "machine": "Takurobo",
+        "model": "P63",
+        "shift": "1",
+        "group": "A",
+        "customer": "IC",
+        "mode": "run",
+        "started": true,
+        "run_start_ms": 1783564033681,
+        "down_start_ms": null,
+        "oee": "86.2",
+        "avb": "25.6",
+        "pfm": "336.3",
+        "qly": "100.0",
+        "efc": "100.0",
+        "target": 30,
+        "iqty": 34,
+        "tqty": 115,
+        "good": 115,
+        "ng": 0,
+        "acv": "383.3",
+        "cyc": "72.00",
+        "rcyc": "0.00",
+        "run_time": "00:10:30",
+        "down_time": "00:30:31",
+        "lastUpdate": 1783565854353
+    }
+]
 []

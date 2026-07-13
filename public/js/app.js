@@ -142,6 +142,24 @@ function getDynamicTarget() {
     return targetModel;
 }
 
+function getRealCycleValue(storageKey) {
+    const realCycle = parseFloat(localStorage.getItem(storageKey) || "0") || 0;
+    return realCycle.toFixed(2);
+}
+
+function applyAchievementBar(value) {
+    const pct = Math.min(Math.max(parseFloat(value) || 0, 0), 100);
+    document.querySelectorAll('[id="acv"]').forEach(el => {
+        el.style.background = `linear-gradient(90deg, #02864A 0%, #02864A ${pct}%, rgba(2, 134, 74, 0.16) ${pct}%, rgba(2, 134, 74, 0.16) 100%)`;
+        el.style.color = "#F8F9FF";
+
+        if (el.parentElement) {
+            el.parentElement.style.backgroundColor = "transparent";
+            el.parentElement.style.color = "#F8F9FF";
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async function () {
     const defaultData = {
         "runtimeTotal": "0",
@@ -352,8 +370,10 @@ window.toggleDowntime = async function (isAuto = false) {
     if (localStorage.getItem("shiftStartedFlag") !== "true") return;
 
     let mode = localStorage.getItem("mode") || "run";
-    if (isAuto || mode === "run") localStorage.setItem("mode", "down");
     if (Swal.isVisible() && !isAuto) { Swal.close(); return; }
+    if (Swal.isVisible()) return;
+
+    if (isAuto || mode === "run") localStorage.setItem("mode", "down");
 
     const reasons = [
         "Not Filled In Yet", "5S", "CHANGE LABEL / RIBBON", "ELECTRICAL STAGE PROBLEM", "EQUIPMENT / M/C PROBLEM", "EQUIP SOLDER PROBLEM", "FCT / ICT / LIGHT PROBLEM", "JIG / PALLET PROBLEM", "KEYENCE PROBLEM", "MATERIAL PROBLEM", "MEETING", "MP FCV OJT", "MP FV OJT", "MP INSERT OJT", "NG FCT",
@@ -484,13 +504,29 @@ window.updateQty = async function (key, change) {
 
     } else if (key === "good") {
         if (change > 0) {
+            if (Swal.isVisible()) {
+                Swal.hideLoading();
+                Swal.close();
+            }
+
             g = g + qtyPallet;
             let start = parseInt(localStorage.getItem("lastProductTime")) || parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
-            localStorage.setItem("realCycleVal", ((now - start) / 1000).toFixed(2));
+            const actualRealCycle = (now - start) / 1000;
+            const standardCycle = parseFloat(localStorage.getItem("cycle_val_display")) || 0;
+            const realCycle = standardCycle > 0
+                ? Math.min(actualRealCycle, standardCycle)
+                : actualRealCycle;
+            localStorage.setItem("realCycleVal", realCycle.toFixed(2));
+            localStorage.setItem("realCyclePalletVal", realCycle.toFixed(2));
             localStorage.setItem("lastProductTime", now.toString());
             let cycleLogs = JSON.parse(localStorage.getItem("real_cycle_logs") || "[]");
 
-            cycleLogs.push(parseFloat(localStorage.getItem("realCycleVal")));
+            cycleLogs.push(realCycle);
+
+            cycleLogs = cycleLogs
+                .map(value => parseFloat(value))
+                .filter(value => Number.isFinite(value) && value >= 0)
+                .map(value => standardCycle > 0 ? Math.min(value, standardCycle) : value);
 
             localStorage.setItem("real_cycle_logs", JSON.stringify(cycleLogs));
 
@@ -505,7 +541,7 @@ window.updateQty = async function (key, change) {
 
             if (targetCycleTime > 0 && actualCycleTime > targetCycleTime) {
                 const overage = (actualCycleTime - targetCycleTime);
-                
+
                 if (localStorage.getItem('autoLogCycleOverage') === 'true') {
                     const dtRecord = {
                         date: new Date().toISOString().split('T')[0],
@@ -532,7 +568,7 @@ window.updateQty = async function (key, change) {
                     localStorage.setItem("all_downtime_logs", JSON.stringify(allDtLogs));
 
                     sendToServer('/api/save-downtime', dtRecord);
-                    
+
                     console.log(`[CYCLE] ✅ Auto-downtime logged: ${overage.toFixed(2)}s`);
                 }
             }
@@ -746,9 +782,12 @@ function renderAll() {
     acv = Math.min(Math.max(acv, 0), 999);
 
     const set = (id, val, colorVal = null, comma = false) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.innerText = comma ? val.toString().replace('.', ',') : val;
+        const elements = document.querySelectorAll(`[id="${id}"]`);
+        if (!elements.length) return;
+        const textValue = comma ? val.toString().replace('.', ',') : val;
+        elements.forEach(el => {
+            el.innerText = textValue;
+        });
 
         if (colorVal === null) return;
         let color = "transparent";
@@ -759,17 +798,20 @@ function renderAll() {
         }
 
         const textColor = color === "transparent" ? "" : "white";
-        const p = el.parentElement;
-        if (p) {
-            p.style.backgroundColor = color;
-            p.style.color = textColor;
-        }
-        if (id === "oee") {
-            const boxT = document.getElementById("box-teks");
-            if (boxT && boxT.parentElement) {
-                boxT.parentElement.style.backgroundColor = color;
-                boxT.parentElement.style.color = textColor;
+        elements.forEach(el => {
+            const p = el.parentElement;
+            if (p) {
+                p.style.backgroundColor = color;
+                p.style.color = textColor;
             }
+        });
+        if (id === "oee") {
+            document.querySelectorAll('[id="box-teks"]').forEach(boxT => {
+                if (boxT.parentElement) {
+                    boxT.parentElement.style.backgroundColor = color;
+                    boxT.parentElement.style.color = textColor;
+                }
+            });
         }
     };
 
@@ -806,14 +848,15 @@ function renderAll() {
     set("pfm", pfm.toFixed(1), pfm);
     set("qly", qly.toFixed(1), qly);
     set("efc", efc.toFixed(1), efc);
-    set("acv", acv.toFixed(1), acv);
+    set("acv", acv.toFixed(1));
+    applyAchievementBar(acv);
     set("gd", mg);
     set("ng", mn);
     set("tqty", mt);
     set("iqty", idealModelQty);
     set("uph", uphAsli);
     set("cyc", cycDisplay.toFixed(2));
-    set("rcyc", get("realCycleVal") || "0.00");
+    set("rcyc", getRealCycleValue("realCycleAvg"));
 
     const runtimeEl = document.getElementById("runtime"); if (runtimeEl) runtimeEl.innerText = formatTime(mr);
     const downtimeEl = document.getElementById("downtime"); if (downtimeEl) downtimeEl.innerText = formatTime(md);
@@ -883,7 +926,7 @@ function renderAll() {
 
         acv: acv.toFixed(1),
         cyc: cycDisplay.toFixed(2),
-        rcyc: get("realCycleVal") || "0.00",
+        rcyc: getRealCycleValue("realCycleAvg"),
         run_time: formatTime(mr),
         down_time: formatTime(md)
     });
@@ -936,7 +979,7 @@ async function saveOEEToServerOnly() {
         qly: document.getElementById('qly')?.innerText || '0%',
         acv: document.getElementById('acv')?.innerText || '0%',
         efc: document.getElementById('efc')?.innerText || '0%',
-        real_cycle_avg: localStorage.getItem('realCycleAvg') || '0.00',
+        real_cycle_avg: getRealCycleValue('realCycleAvg'),
         good: localStorage.getItem('good') || '0',
         ng: localStorage.getItem('nogood') || '0',
         stop_time: stopTimeStr
@@ -1402,7 +1445,7 @@ window.exportToExcel = async function () {
         qly: document.getElementById('qly')?.innerText || '0%',
         acv: document.getElementById('acv')?.innerText || '0%',
         efc: document.getElementById('efc')?.innerText || '0%',
-        avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+        avg_cycle: getRealCycleValue('realCycleAvg'),
         std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
         good: localStorage.getItem('good') || '0',
         ng: localStorage.getItem('nogood') || '0',
@@ -1474,9 +1517,11 @@ function startTime() {
 }
 
 function initKeyboardShortcuts() {
-    window.addEventListener("keydown", (e) => {
-        if (e.key.toLowerCase() === 'z') {
+    document.addEventListener("keydown", (e) => {
+        const k = e.key.toLowerCase();
+        if (k === 'z' && Swal.isVisible()) {
             e.preventDefault();
+            e.stopImmediatePropagation();
             window.updateQty("good", 1);
         }
     }, true);
@@ -1661,7 +1706,7 @@ window.resetData = async function (options = {}) {
             qly: document.getElementById('qly')?.innerText || '0',
             acv: document.getElementById('acv')?.innerText || '0',
             efc: document.getElementById('efc')?.innerText || '0',
-            avg_cycle: localStorage.getItem('realCycleAvg') || '0.00',
+            avg_cycle: getRealCycleValue('realCycleAvg'),
             std_cycle: parseFloat(localStorage.getItem('cycle_val_display') || '0').toFixed(2),
             good: localStorage.getItem('good') || '0',
             ng: localStorage.getItem('nogood') || '0',
@@ -1692,13 +1737,13 @@ window.resetData = async function (options = {}) {
     const savedExportHistory = localStorage.getItem('oee_export_history');
     const savedTypePresets = localStorage.getItem('type_presets');
     const lineBeingCleared = localStorage.getItem('line');
-    
+
     localStorage.clear();
     if (savedExportHistory) localStorage.setItem('oee_export_history', savedExportHistory);
     if (savedTypePresets) localStorage.setItem('type_presets', savedTypePresets);
-    
+
     await clearLiveStatus(lineBeingCleared);
-    
+
     console.log('[STOP SHIFT] Reloading page...');
     location.reload();
 };
