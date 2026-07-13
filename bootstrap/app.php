@@ -11,7 +11,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->validateCsrfTokens(except: [
+            'api/save-oee',
+            'api/save-downtime',
+            'api/edit-oee',
+            'api/edit-downtime',
+            'api/delete-oee',
+            'api/delete-downtime',
+            'api/live-update',
+            'api/live-clear',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

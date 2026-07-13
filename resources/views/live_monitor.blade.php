@@ -4,7 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>LIVE MONITOR - OEE ALL LINES</title>
+    <script>
+        (function () {
+            const TV_W = 1920;
+            const TV_H = 1080;
+            function applyZoom() {
+                const scaleX = window.screen.width / TV_W;
+                const scaleY = window.screen.height / TV_H;
+                const zoom = Math.min(scaleX, scaleY);
+                document.documentElement.style.zoom = zoom;
+            }
+            applyZoom();
+            window.addEventListener('resize', applyZoom);
+        })();
+    </script>
+    <title>LIVE MONITOR</title>
     <link rel="icon" href="{{ asset('favicon.jpg') }}">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
@@ -173,7 +187,6 @@
 
         .lm-card.is-stale {
             opacity: 1;
-            /* Tidak redup lagi */
         }
 
         .lm-card-head {
@@ -185,7 +198,7 @@
 
         .lm-card-headrow {
             display: flex;
-            align-items: baseline;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 4px;
         }
@@ -208,6 +221,45 @@
             text-transform: uppercase;
             background: #02864A;
             white-space: nowrap;
+        }
+
+        .lm-status-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .lm-btn-stop {
+            width: clamp(17px, 1.6vw, 22px);
+            height: clamp(17px, 1.6vw, 22px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(248, 249, 255, 0.45);
+            border-radius: 50%;
+            background: #E8083E;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+        }
+
+        .lm-btn-stop:hover {
+            background: #FB8D1A;
+        }
+
+        .lm-btn-stop:disabled {
+            cursor: wait;
+            opacity: 0.55;
+        }
+
+        .lm-stop-icon {
+            width: 42%;
+            height: 42%;
+            display: block;
+            background: #F8F9FF;
+            border-radius: 1px;
         }
 
         .lm-card.st-down .lm-card-badge,
@@ -552,10 +604,16 @@
 
     <script>
         const AUTO_DETECT_HOST = window.location.hostname;
-        const API_BASE = `http://${AUTO_DETECT_HOST}:4000`;
+        const API_BASE = window.location.origin;
+        const API_BASES = [window.location.origin];
         const WS_SERVER = `ws://${AUTO_DETECT_HOST}:3000`;
         const CARDS_PER_SLIDE = 14;
         const STALE_MS = 30000;
+        const CLEAR_HOLD_MS = 8000;
+        const STOPPED_LINES_KEY = 'lm_stopped_lines';
+        const REMOTE_STOP_COMMAND_KEY = 'oee_stop_command';
+        const LIVE_LOCAL_LINES_KEY = 'oee_live_lines';
+        const STOPPED_LINE_TTL_MS = 12 * 60 * 60 * 1000;
         const lineStartTimes = {};
         const linesBeingCleared = new Set();
 
@@ -595,6 +653,71 @@
             return 'lmcard-' + String(line).replace(/[^a-zA-Z0-9_-]/g, '_');
         }
 
+        function getStoppedLines() {
+            try {
+                return JSON.parse(localStorage.getItem(STOPPED_LINES_KEY) || '{}') || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function setStoppedLines(lines) {
+            localStorage.setItem(STOPPED_LINES_KEY, JSON.stringify(lines));
+        }
+
+        function rememberStoppedLine(lineName) {
+            const stoppedLines = getStoppedLines();
+            const currentData = liveLinesMap[lineName] || {};
+            stoppedLines[lineName] = {
+                run_start_ms: String(currentData.run_start_ms || ''),
+                stopped_at: Date.now()
+            };
+            setStoppedLines(stoppedLines);
+        }
+
+        function shouldHideStoppedLine(d) {
+            const lineName = String(d.line || '').trim();
+            if (!lineName) return false;
+
+            const stoppedLines = getStoppedLines();
+            const stopped = stoppedLines[lineName];
+            if (!stopped) return false;
+
+            if (Date.now() - Number(stopped.stopped_at || 0) > STOPPED_LINE_TTL_MS) {
+                delete stoppedLines[lineName];
+                setStoppedLines(stoppedLines);
+                return false;
+            }
+
+            const currentRunStart = String(d.run_start_ms || '');
+            if (currentRunStart && stopped.run_start_ms && currentRunStart !== String(stopped.run_start_ms)) {
+                delete stoppedLines[lineName];
+                setStoppedLines(stoppedLines);
+                return false;
+            }
+
+            return true;
+        }
+
+        function getLocalLiveStatus() {
+            try {
+                const lines = JSON.parse(localStorage.getItem(LIVE_LOCAL_LINES_KEY) || '{}') || {};
+                return Object.values(lines);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function removeLocalLiveLine(lineName) {
+            const cleanLine = String(lineName || '').trim();
+            if (!cleanLine) return;
+            try {
+                const lines = JSON.parse(localStorage.getItem(LIVE_LOCAL_LINES_KEY) || '{}') || {};
+                delete lines[cleanLine];
+                localStorage.setItem(LIVE_LOCAL_LINES_KEY, JSON.stringify(lines));
+            } catch (e) {}
+        }
+
         function buildCardSkeleton(line) {
             const id = safeId(line);
             return `
@@ -602,7 +725,12 @@
                     <div class="lm-card-head">
                         <div class="lm-card-headrow">
                             <div class="lm-card-line" id="${id}-line"></div>
-                            <span class="lm-card-badge" id="${id}-badge">RUNNING</span>
+                            <div class="lm-status-actions">
+                                <span class="lm-card-badge" id="${id}-badge">RUNNING</span>
+                                <button class="lm-btn-stop" type="button" data-stop-line="${escapeHtml(line)}" title="Stop line">
+                                    <span class="lm-stop-icon"></span>
+                                </button>
+                            </div>
                         </div>
                         <div class="lm-card-sub" id="${id}-sub1"></div>
                         <div class="lm-card-sub" id="${id}-sub2"></div>
@@ -784,7 +912,24 @@
             document.getElementById(`${id}-target`).textContent = parseInt(d.target || 0);
             document.getElementById(`${id}-tqty`).textContent = parseInt(d.tqty || 0);
             document.getElementById(`${id}-iqty`).textContent = parseInt(d.iqty || 0);
-            document.getElementById(`${id}-good`).textContent = parseInt(d.good || 0);
+            
+            const achievement = (d.target > 0) ? ((d.good / d.target) * 100).toFixed(1) : 0;
+            const achEl = document.getElementById(`${id}-good`);
+            achEl.textContent = achievement + '%';
+            
+            const achContainer = achEl.closest('.lm-prod-item');
+            if (achContainer) {
+                const achVal = parseFloat(achievement || 0);
+                achEl.style.color = '#F8F9FF';
+                if (achVal >= 100) {
+                    achContainer.style.backgroundColor = '#02864A';
+                } else if (achVal < 90) {
+                    achContainer.style.backgroundColor = '#E8083E';
+                } else {
+                    achContainer.style.backgroundColor = 'rgba(248,249,255,0.06)';
+                }
+            }
+            
             document.getElementById(`${id}-good2`).textContent = parseInt(d.good || 0);
             document.getElementById(`${id}-ng`).textContent = parseInt(d.ng || 0);
 
@@ -892,20 +1037,96 @@
             updateAllCards();
         }
 
+        function requestLineStop(line, button) {
+            const lineName = String(line || '').trim();
+            if (!lineName) return;
+
+            const confirmed = confirm(`Stop line ${lineName}?`);
+            if (!confirmed) return;
+
+            if (button) button.disabled = true;
+            localStorage.setItem(REMOTE_STOP_COMMAND_KEY, JSON.stringify({
+                id: `${Date.now()}-${lineName}`,
+                type: 'stop_line',
+                line: lineName,
+                source: 'live_monitor',
+                timestamp: Date.now()
+            }));
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'stop_line',
+                    line: lineName,
+                    timestamp: Date.now()
+                }));
+            }
+
+            clearLiveStatus(lineName);
+            setTimeout(() => clearLiveStatus(lineName), 1500);
+            setTimeout(() => clearLiveStatus(lineName), 5000);
+            rememberStoppedLine(lineName);
+            linesBeingCleared.add(lineName);
+            delete liveLinesMap[lineName];
+            delete lineStartTimes[lineName];
+            delete lastPayloadRunStartMs[lineName];
+            render();
+
+            setTimeout(() => {
+                linesBeingCleared.delete(lineName);
+            }, CLEAR_HOLD_MS);
+        }
+
+        async function clearLiveStatus(lineName) {
+            removeLocalLiveLine(lineName);
+            for (const apiBase of API_BASES) {
+                try {
+                    const res = await fetch(`${apiBase}/api/live-clear`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            line: lineName
+                        }),
+                        signal: AbortSignal.timeout(5000)
+                    });
+                    if (res.ok) return;
+                } catch (e) {
+                    console.warn('clearLiveStatus error:', e);
+                }
+            }
+        }
+
+        document.addEventListener('click', (event) => {
+            const stopButton = event.target.closest('.lm-btn-stop');
+            if (!stopButton) return;
+            event.preventDefault();
+            event.stopPropagation();
+            requestLineStop(stopButton.dataset.stopLine, stopButton);
+        });
+
 
         async function loadLiveStatus() {
             try {
-                const res = await fetch(`${API_BASE}/api/live-status`, {
-                    signal: AbortSignal.timeout(5000)
-                });
-                if (!res.ok) throw new Error('fetch failed');
-                const arr = await res.json();
+                let arr = null;
+                for (const apiBase of API_BASES) {
+                    try {
+                        const res = await fetch(`${apiBase}/api/live-status?t=${Date.now()}`, {
+                            cache: 'no-store',
+                            signal: AbortSignal.timeout(5000)
+                        });
+                        if (!res.ok) continue;
+                        arr = await res.json();
+                        break;
+                    } catch (e) {}
+                }
+                if (!arr || !arr.length) arr = getLocalLiveStatus();
+                if (!arr) throw new Error('fetch failed');
                 liveLinesMap = {};
                 arr.forEach(d => {
                     if (!d.started) return;
 
                     const cleanLine = String(d.line || '').trim();
-                    if (cleanLine && !linesBeingCleared.has(cleanLine)) {
+                    if (cleanLine && !linesBeingCleared.has(cleanLine) && !shouldHideStoppedLine(d)) {
                         liveLinesMap[cleanLine] = {
                             ...d,
                             line: cleanLine
@@ -916,6 +1137,19 @@
             } catch (e) {
                 console.error('loadLiveStatus error:', e);
             }
+        }
+
+        function applyLiveUpdatePayload(d) {
+            if (!d || !d.started) return;
+            const cleanLine = String(d.line || '').trim();
+            if (!cleanLine || linesBeingCleared.has(cleanLine) || shouldHideStoppedLine(d)) return;
+
+            linesBeingCleared.delete(cleanLine);
+            liveLinesMap[cleanLine] = {
+                ...d,
+                line: cleanLine
+            };
+            render();
         }
 
         setInterval(updateAllCards, 1000);
@@ -934,25 +1168,20 @@
                     try {
                         const msg = JSON.parse(event.data);
                         if (msg.type === 'live_update') {
-                            if (msg.line && !linesBeingCleared.has(String(msg.line).trim())) {
-                                loadLiveStatus();
-                            }
+                            applyLiveUpdatePayload(msg);
                         } else if (msg.type === 'live_clear') {
                             if (msg.line) {
                                 const cleanLine = String(msg.line).trim();
                                 linesBeingCleared.add(cleanLine);
                                 delete liveLinesMap[cleanLine];
+                                delete lineStartTimes[cleanLine];
+                                delete lastPayloadRunStartMs[cleanLine];
                                 render();
 
                                 setTimeout(() => {
+                                    linesBeingCleared.delete(cleanLine);
                                     loadLiveStatus();
-                                    setTimeout(() => {
-                                        linesBeingCleared.delete(cleanLine);
-                                        console.log(
-                                            `[Clear Timeout] Line ${cleanLine} dihapus dari tracking`
-                                        );
-                                    }, 300000);
-                                }, 500);
+                                }, CLEAR_HOLD_MS);
                             }
                         }
                     } catch (e) {}
