@@ -2412,5 +2412,147 @@
             }
         ],
         "savedAt": "2026-06-24T03:52:20.697Z"
+    },
+    {
+        "date": "2026-07-17",
+        "machine": "Takurobo",
+        "operator": "Group A",
+        "model": "P63",
+        "customer": "IC",
+        "shift": "1",
+        "group": "A",
+        "line": "10",
+        "start": "17\/Jul\/26 13:31:58",
+        "oee": "2.4",
+        "avb": "11.2",
+        "pfm": "25.2",
+        "qly": "87.0",
+        "acv": "3.8",
+        "efc": "22.2",
+        "avg_cycle": "20.64",
+        "std_cycle": "48.00",
+        "good": "20",
+        "ng": "3",
+        "run_time": "00:04:04",
+        "down_time": "00:32:27",
+        "stop_time": "17\/Jul\/26 14:08:35",
+        "target": "600",
+        "uph": "150",
+        "ideal": "90",
+        "downtime_logs": [
+            {
+                "date": "2026-07-17",
+                "machine": "Takurobo",
+                "model": "P63",
+                "type": "LOST",
+                "detail": "Not Filled In Yet",
+                "time": "17\/Jul\/26 13:32:53",
+                "period": "00:30:54",
+                "start": "17\/Jul\/26 13:32:53",
+                "end": "17\/Jul\/26 14:03:48",
+                "durationMs": 1854988,
+                "reason": "Not Filled In Yet",
+                "category": "LOST",
+                "line": "10",
+                "tech": null,
+                "job": null,
+                "executor": null,
+                "solution": null
+            },
+            {
+                "date": "2026-07-17",
+                "machine": "Takurobo",
+                "model": "P63",
+                "type": "LOST",
+                "detail": "Not Filled In Yet",
+                "time": "17\/Jul\/26 14:04:36",
+                "period": "00:00:05",
+                "start": "17\/Jul\/26 14:04:36",
+                "end": "17\/Jul\/26 14:04:41",
+                "durationMs": 5408,
+                "reason": "Not Filled In Yet",
+                "category": "LOST",
+                "line": "10",
+                "tech": null,
+                "job": null,
+                "executor": null,
+                "solution": null
+            },
+            {
+                "date": "2026-07-17",
+                "machine": "Takurobo",
+                "model": "P63",
+                "type": "LOST",
+                "detail": "Not Filled In Yet",
+                "time": "17\/Jul\/26 14:06:57",
+                "period": "00:00:02",
+                "start": "17\/Jul\/26 14:06:57",
+                "end": "17\/Jul\/26 14:06:59",
+                "durationMs": 2407,
+                "reason": "Not Filled In Yet",
+                "category": "LOST",
+                "line": "10",
+                "tech": null,
+                "job": null,
+                "executor": null,
+                "solution": null
+            },
+            {
+                "date": "2026-07-17",
+                "machine": "Takurobo",
+                "model": "P63",
+                "type": "LOST",
+                "detail": "Not Filled In Yet",
+                "time": "17\/Jul\/26 14:07:58",
+                "period": "00:00:05",
+                "start": "17\/Jul\/26 14:07:58",
+                "end": "17\/Jul\/26 14:08:04",
+                "durationMs": 5756,
+                "reason": "Not Filled In Yet",
+                "category": "LOST",
+                "line": "10",
+                "tech": null,
+                "job": null,
+                "executor": null,
+                "solution": null
+            }
+        ],
+        "ng_logs": [
+            {
+                "time": "14.07.40",
+                "reason": "BLUR",
+                "model": "P63",
+                "customer": "IC"
+            },
+            {
+                "time": "14.07.57",
+                "reason": "WRONG INSERT",
+                "model": "P63",
+                "customer": "IC"
+            },
+            {
+                "time": "14.08.17",
+                "reason": "BLUR",
+                "model": "P63",
+                "customer": "IC"
+            }
+        ],
+        "production_history": [
+            {
+                "model_name": "P63",
+                "model_start": "17\/Jul\/26 13:31:58",
+                "model_end": "14.08.35",
+                "model_fulltime": "00:36:36",
+                "model_runtime": "00:04:04",
+                "model_downtime": "00:32:27",
+                "target": "600",
+                "uph": "150",
+                "ideal": "90",
+                "good": "20",
+                "nogood": "3",
+                "total_qty": "23"
+            }
+        ],
+        "id": 1784272116472
     }
 ]

@@ -443,15 +443,16 @@ window.toggleDowntime = async function (isAuto = false) {
     renderAll();
 };
 
-window.updateQty = async function (key, change) {
+window.updateQty = async function (key, change, quantityOverride = null, deductFromGood = true) {
     if (localStorage.getItem("shiftStartedFlag") !== "true") return;
     const now = Date.now();
     const qtyPallet = parseInt(localStorage.getItem("qty_Pallet")) || 1;
+    const qtyChange = quantityOverride === null ? qtyPallet : Math.max(1, parseInt(quantityOverride) || 1);
     let g = parseInt(localStorage.getItem("good")) || 0;
     let n = parseInt(localStorage.getItem("nogood")) || 0;
 
     if (key === "nogood" && change > 0) {
-        if (g <= 0) {
+        if (deductFromGood && g < qtyChange) {
             Swal.fire({ icon: 'error', title: 'No Qty!', timer: 1000, showConfirmButton: false });
             return;
         }
@@ -487,7 +488,8 @@ window.updateQty = async function (key, change) {
             fr = custom || "Unknown";
         }
 
-        g = g - qtyPallet; n = n + qtyPallet;
+        if (deductFromGood) g = g - qtyChange;
+        n = n + qtyChange;
         localStorage.setItem("good", g);
         localStorage.setItem("nogood", n);
 
@@ -511,7 +513,7 @@ window.updateQty = async function (key, change) {
                 Swal.close();
             }
 
-            g = g + qtyPallet;
+            g = g + qtyChange;
             let start = parseInt(localStorage.getItem("lastProductTime")) || parseInt(localStorage.getItem("lastModeUpdateTime")) || now;
             const actualRealCycle = (now - start) / 1000;
             const standardCycle = parseFloat(localStorage.getItem("cycle_val_display")) || 0;
@@ -635,7 +637,7 @@ window.updateQty = async function (key, change) {
                 Swal.close();
             }
         } else {
-            g = Math.max(0, g - qtyPallet);
+            g = Math.max(0, g - qtyChange);
         }
         localStorage.setItem("good", g);
     }
@@ -1545,6 +1547,7 @@ function initKeyboardShortcuts() {
             case 'd': e.preventDefault(); window.openConfig(); break;
             case 'e': e.preventDefault(); window.exportToExcel(); break;
             case 'z': e.preventDefault(); window.updateQty("good", 1); break;
+            case 'x': e.preventDefault(); window.updateQty("nogood", 1, 1, false); break;
             case 'arrowright': if (swiperInstance) swiperInstance.slideNext(); break;
             case 'arrowleft': if (swiperInstance) swiperInstance.slidePrev(); break;
             case 'escape': e.preventDefault(); Swal.close(); break;
